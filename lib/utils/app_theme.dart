@@ -100,10 +100,28 @@ class AppTheme {
         fontSize: 32,
         color: color,
       ),
+      headlineLarge: TextStyle(
+        fontFamily: kHeadingFont,
+        fontWeight: FontWeight.w600,
+        fontSize: 24,
+        color: color,
+      ),
       headlineMedium: TextStyle(
         fontFamily: kHeadingFont,
         fontWeight: FontWeight.w600,
         fontSize: 22,
+        color: color,
+      ),
+      headlineSmall: TextStyle(
+        fontFamily: kHeadingFont,
+        fontWeight: FontWeight.w600,
+        fontSize: 20,
+        color: color,
+      ),
+      labelLarge: TextStyle(
+        fontFamily: kHeadingFont,
+        fontWeight: FontWeight.w600,
+        fontSize: 14,
         color: color,
       ),
       bodyLarge: TextStyle(
@@ -118,11 +136,12 @@ class AppTheme {
         fontSize: 14,
         color: color.withValues(alpha: 0.9),
       ),
-      labelLarge: TextStyle(
-        fontFamily: kHeadingFont,
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-        color: color,
+
+      bodySmall: TextStyle(
+        fontFamily: kBodyFont,
+        fontWeight: FontWeight.w400,
+        fontSize: 12,
+        color: color.withValues(alpha: 0.9),
       ),
     );
   }

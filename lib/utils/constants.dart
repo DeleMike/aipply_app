@@ -4,7 +4,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 
 import 'app_colors.dart';
-import 'dimensions.dart';
 
 const String kAppName = 'Drazex';
 
@@ -57,33 +56,24 @@ void showToast(
 class SnackBarService {
   /// show a snackbar
   static void showSnackBar({
+    required BuildContext context, // 1. We must pass the context
     required String content,
     Color? color,
-    int timeInSec = 4,
-    bool isSelectable = false,
+    // Removed timeInSec and isSelectable, as they aren't in your new example
   }) {
+    // 2. Create the simple SnackBar, just like your example
     final snackbar = SnackBar(
-      backgroundColor: color ?? AppColors.kPrimary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(kSmallRadius)),
-      behavior: SnackBarBehavior.floating,
-      duration: Duration(seconds: timeInSec),
-      showCloseIcon: true,
-      content: Padding(
-        padding: const EdgeInsets.all(kPaddingS),
-        child: isSelectable
-            ? SelectableText(
-                content,
-                style: const TextStyle(color: AppColors.kWhite, fontSize: 14),
-              )
-            : Text(
-                content,
-                style: const TextStyle(color: AppColors.kWhite, fontSize: 14),
-                //Theme.of(context).textTheme.bodyMedium!.copyWith(color: kWhite),
-              ),
+      backgroundColor: color ?? AppColors.kPrimary, // Use the color, or a default
+      content: Text(
+        content,
+        // 3. Use the Theme from the context, as in your example
+        style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: AppColors.kWhite),
       ),
     );
-    messengerKey.currentState!
-      ..removeCurrentSnackBar()
+
+    // 4. Use the context to get the ScaffoldMessenger
+    ScaffoldMessenger.of(context)
+      ..removeCurrentSnackBar() // Kept this handy feature from your old code
       ..showSnackBar(snackbar);
   }
 }

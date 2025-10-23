@@ -13,4 +13,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appName => 'AIpply';
+
+  @override
+  String get jobDescription => 'Job Description';
+
+  @override
+  String get jobDescTextFieldHint => 'Paste the full job description here...';
+
+  @override
+  String get experienceLevel => 'Experience level';
+
+  @override
+  String get answerQuestions => 'Answer Questions';
 }

@@ -105,6 +105,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AIpply'**
   String get appName;
+
+  /// Job description
+  ///
+  /// In en, this message translates to:
+  /// **'Job Description'**
+  String get jobDescription;
+
+  /// hint message for job description text field
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the full job description here...'**
+  String get jobDescTextFieldHint;
+
+  /// experience level
+  ///
+  /// In en, this message translates to:
+  /// **'Experience level'**
+  String get experienceLevel;
+
+  /// Answer Questions
+  ///
+  /// In en, this message translates to:
+  /// **'Answer Questions'**
+  String get answerQuestions;
 }
 
 class _AppLocalizationsDelegate

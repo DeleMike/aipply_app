@@ -7,5 +7,21 @@
   "appName": "AIpply",
   "@appName": {
     "description": "The name of the app"
+  },
+  "jobDescription":"Job Description",
+  "@jobDescription":{
+    "description": "Job description"
+  },
+  "jobDescTextFieldHint":"Paste the full job description here...",
+  "@jobDescTextFieldHint":{
+    "description": "hint message for job description text field"
+  },
+  "experienceLevel":"Experience level",
+  "@experienceLevel":{
+    "description": "experience level"
+  },
+  "answerQuestions":"Answer Questions",
+  "@answerQuestions":{
+    "description": "Answer Questions"
   }
 }

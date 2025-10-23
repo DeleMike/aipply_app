@@ -6,8 +6,8 @@ class AppColors {
   static const Color kTransparent = Color(0x00000000);
   
   // Core brand
-  static const Color kPrimary = Color(0xFF0056B3); // Deep Blue
-  static const Color kAccent = Color(0xFFFFC107); // Vibrant Gold
+  static const Color kPrimary = Color(0xFF2D4473); // Deep Blue
+  static const Color kAccent = Color(0xFFF1AB3C); // Vibrant Gold
 
   // Backgrounds & surfaces
   static const Color kBackground = Color(0xFFF0F2F5);
