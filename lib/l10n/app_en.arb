@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "language": "English",
+  "@language": {
+    "description": "The current language is English"
+  },
+  "appName": "AIpply",
+  "@appName": {
+    "description": "The name of the app"
+  }
+}
