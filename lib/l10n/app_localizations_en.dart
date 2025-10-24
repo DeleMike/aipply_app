@@ -66,4 +66,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generateMyDocs => 'Generate My Documents';
+
+  @override
+  String get errorMessageForQuestionnaire =>
+      'can you help us fill in this field, please? 🥹';
+
+  @override
+  String get yourDocs => 'Your Documents';
+
+  @override
+  String get cv => 'CV';
+
+  @override
+  String get coverLetter => 'Cover Letter';
+
+  @override
+  String get downloadCV => 'Download CV.pdf';
+
+  @override
+  String get downloadCoverLetter => 'Download Cover Letter.pdf';
+
+  @override
+  String get downloadAsAPDF => 'Download as PDF';
+
+  @override
+  String get yourDoc => 'Your document...';
 }

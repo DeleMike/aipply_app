@@ -53,5 +53,21 @@
   "youAreAllSetDesc":"We're ready to build your CV and cover letter.",
   "@youAreAllSetDesc":{},
   "generateMyDocs":"Generate My Documents",
-  "@generateMyDocs":{}
+  "@generateMyDocs":{},
+  "errorMessageForQuestionnaire":"can you help us fill in this field, please? 🥹",
+  "@errorMessageForQuestionnaire":{},
+  "yourDocs":"Your Documents",
+  "@yourDocs":{},
+  "cv":"CV",
+  "@cv":{},
+  "coverLetter":"Cover Letter",
+  "@coverLetter":{},
+  "downloadCV":"Download CV.pdf",
+  "@downloadCV":{},
+  "downloadCoverLetter":"Download Cover Letter.pdf",
+  "@downloadCoverLetter":{},
+  "downloadAsAPDF":"Download as PDF",
+  "@downloadAsAPDF":{},
+  "yourDoc":"Your document...",
+  "@yourDoc":{}
 }

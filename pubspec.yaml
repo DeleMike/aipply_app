@@ -32,6 +32,7 @@ dependencies:
   pdf: ^3.11.3
   printing: ^5.14.2
   universal_html: ^2.2.4
+  flutter_html_to_pdf: ^0.7.0
 
 dev_dependencies:
   flutter_test:

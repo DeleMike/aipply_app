@@ -1,4 +1,4 @@
-import 'package:aipply/core/home/presentation/result_screen.dart';
+import 'package:aipply/core/results/presentation/result_screen.dart';
 import 'package:aipply/core/questionnaire/presentation/questionnaire_screen.dart';
 import 'package:go_router/go_router.dart';
 

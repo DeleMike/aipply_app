@@ -207,6 +207,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate My Documents'**
   String get generateMyDocs;
+
+  /// No description provided for @errorMessageForQuestionnaire.
+  ///
+  /// In en, this message translates to:
+  /// **'can you help us fill in this field, please? 🥹'**
+  String get errorMessageForQuestionnaire;
+
+  /// No description provided for @yourDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Documents'**
+  String get yourDocs;
+
+  /// No description provided for @cv.
+  ///
+  /// In en, this message translates to:
+  /// **'CV'**
+  String get cv;
+
+  /// No description provided for @coverLetter.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover Letter'**
+  String get coverLetter;
+
+  /// No description provided for @downloadCV.
+  ///
+  /// In en, this message translates to:
+  /// **'Download CV.pdf'**
+  String get downloadCV;
+
+  /// No description provided for @downloadCoverLetter.
+  ///
+  /// In en, this message translates to:
+  /// **'Download Cover Letter.pdf'**
+  String get downloadCoverLetter;
+
+  /// No description provided for @downloadAsAPDF.
+  ///
+  /// In en, this message translates to:
+  /// **'Download as PDF'**
+  String get downloadAsAPDF;
+
+  /// No description provided for @yourDoc.
+  ///
+  /// In en, this message translates to:
+  /// **'Your document...'**
+  String get yourDoc;
 }
 
 class _AppLocalizationsDelegate

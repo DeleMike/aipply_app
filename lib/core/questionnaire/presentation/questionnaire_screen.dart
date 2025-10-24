@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:aipply/core/questionnaire/application/providers.dart';
 import 'package:aipply/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,23 +84,13 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     );
   }
 
-  void _generateDocuments() async {
+  Future<Map<String, String>> _generateDocuments() async {
     final answers = <String, String>{};
     for (int i = 0; i < widget.questions.length; i++) {
       answers[widget.questions[i]] = _answerControllers[i].text;
     }
 
-    final response = await _fakeApiCall();
-
-    if (mounted) {
-      context.goNamed(
-        AppRouter.resultsScreen.substring(1),
-        extra: {
-          'cv_html': response['cv_html'],
-          'cover_letter_html': response['cover_letter_html'],
-        },
-      );
-    }
+    return await _fakeApiCall();
   }
 
   Future<Map<String, String>> _fakeApiCall() async {
@@ -306,7 +297,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
 
   Widget _buildFinalPage() {
     final buttonText = AppLocalizations.of(context)!.generateMyDocs;
-
+    final isGenerating = ref.watch(isGeneratingCVAndCoverLetterProvider);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -340,14 +331,26 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 24),
             textStyle: Theme.of(context).textTheme.titleLarge,
           ),
-          onPressed: () {
+          onPressed: () async {
+            if (isGenerating) return;
             final isValid = _formKey.currentState!.validate();
 
             if (isValid) {
-              _generateDocuments();
+              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = true;
+              final response = await _generateDocuments();
+              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
+              if (mounted) {
+                context.goNamed(
+                  AppRouter.resultsScreen.substring(1),
+                  extra: {
+                    'cv_html': response['cv_html'],
+                    'cover_letter_html': response['cover_letter_html'],
+                  },
+                );
+              }
             }
           },
-          child: Text(buttonText),
+          child: isGenerating ? CircularProgressIndicator() : Text(buttonText),
         ),
       ],
     );
