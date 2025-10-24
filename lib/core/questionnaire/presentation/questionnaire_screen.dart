@@ -22,6 +22,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
   late List<TextEditingController> _answerControllers;
   late AnimationController _rotationController;
   late AnimationController _linearController;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   late int _totalPages;
   int _currentPageIndex = 0;
@@ -64,10 +65,13 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
   }
 
   void _nextPage() {
-    _pageController.nextPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
+    final isValid = _formKey.currentState!.validate();
+    if (isValid) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   void _previousPage() {
@@ -105,84 +109,87 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
           constraints: const BoxConstraints(maxWidth: 800),
           child: Padding(
             padding: const EdgeInsets.all(32.0),
-            child: Column(
-              children: [
-                // progress bar
-                Column(
-                  children: [
-                    (_currentPageIndex == 0 || _currentPageIndex == _totalPages - 1)
-                        ? AnimatedBuilder(
-                            animation: _linearController,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // progress bar
+                  Column(
+                    children: [
+                      (_currentPageIndex == 0 || _currentPageIndex == _totalPages - 1)
+                          ? AnimatedBuilder(
+                              animation: _linearController,
 
-                            builder: (context, child) {
-                              final dx =
-                                  15 * math.sin(_linearController.value * 2 * math.pi);
-                              return Transform.translate(
-                                offset: Offset(dx, 0),
-                                child: child,
-                              );
-                            },
-                            child: Text(
+                              builder: (context, child) {
+                                final dx =
+                                    15 * math.sin(_linearController.value * 2 * math.pi);
+                                return Transform.translate(
+                                  offset: Offset(dx, 0),
+                                  child: child,
+                                );
+                              },
+                              child: Text(
+                                _getProgressText(),
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            )
+                          : Text(
                               _getProgressText(),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                          )
-                        : Text(
-                            _getProgressText(),
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                    const SizedBox(height: 8),
-                    AnimatedSwitcher(
-                      duration: Duration(milliseconds: 150),
-                      switchInCurve: Curves.easeIn,
-                      switchOutCurve: Curves.easeOut,
+                      const SizedBox(height: 8),
+                      AnimatedSwitcher(
+                        duration: Duration(milliseconds: 150),
+                        switchInCurve: Curves.easeIn,
+                        switchOutCurve: Curves.easeOut,
 
-                      child: LinearProgressIndicator(
-                        key: ValueKey(_currentPageIndex),
-                        value: (_currentPageIndex + 1) / _totalPages,
-                        backgroundColor: AppColors.kGray300,
-                        color: AppColors.kPrimary,
-                        borderRadius: BorderRadius.circular(kSmallRadius),
-                        minHeight: 8,
+                        child: LinearProgressIndicator(
+                          key: ValueKey(_currentPageIndex),
+                          value: (_currentPageIndex + 1) / _totalPages,
+                          backgroundColor: AppColors.kGray300,
+                          color: AppColors.kPrimary,
+                          borderRadius: BorderRadius.circular(kSmallRadius),
+                          minHeight: 8,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-
-                // question section
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(), // Disable swiping
-                    itemCount: _totalPages,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPageIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      // Page 0: Intro
-                      if (index == 0) {
-                        return _buildIntroPage();
-                      }
-                      // Page N+1: Final
-                      if (index == _totalPages - 1) {
-                        return _buildFinalPage();
-                      }
-                      // Pages 1-N: Questions
-                      final questionIndex = index - 1;
-                      return _buildQuestionPage(
-                        widget.questions[questionIndex],
-                        _answerControllers[questionIndex],
-                        questionIndex + 1,
-                      );
-                    },
+                    ],
                   ),
-                ),
 
-                if (_currentPageIndex != _totalPages - 1) // Hide on final page
-                  _buildNavigationRow(),
-              ],
+                  // question section
+                  Expanded(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(), // Disable swiping
+                      itemCount: _totalPages,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentPageIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        // Page 0: Intro
+                        if (index == 0) {
+                          return _buildIntroPage();
+                        }
+                        // Page N+1: Final
+                        if (index == _totalPages - 1) {
+                          return _buildFinalPage();
+                        }
+                        // Pages 1-N: Questions
+                        final questionIndex = index - 1;
+                        return _buildQuestionPage(
+                          widget.questions[questionIndex],
+                          _answerControllers[questionIndex],
+                          questionIndex + 1,
+                        );
+                      },
+                    ),
+                  ),
+
+                  if (_currentPageIndex != _totalPages - 1) // Hide on final page
+                    _buildNavigationRow(),
+                ],
+              ),
             ),
           ),
         ),
@@ -262,18 +269,25 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
           const SizedBox(height: 12),
           SelectableText(question, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 24),
-          TextField(
+          TextFormField(
             controller: controller,
             maxLines: 5,
             decoration: InputDecoration(
               hintText: AppLocalizations.of(context)!.yourAnswerHere,
               filled: true,
               fillColor: AppColors.kGray300,
+
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(kSmallRadius),
                 borderSide: BorderSide.none,
               ),
             ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'can you help us fill in this field, please? 🥹';
+              }
+              return null;
+            },
           ),
         ],
       ),
@@ -316,7 +330,13 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 24),
             textStyle: Theme.of(context).textTheme.titleLarge,
           ),
-          onPressed: _generateDocuments,
+          onPressed: () {
+            final isValid = _formKey.currentState!.validate();
+
+            if (isValid) {
+              _generateDocuments();
+            }
+          },
           child: Text(buttonText),
         ),
       ],
