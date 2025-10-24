@@ -9,6 +9,7 @@ import 'package:aipply/utils/dimensions.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../utils/app_router.dart';
+import '../../../widgets/loading_overlay.dart';
 
 class QuestionnaireScreen extends ConsumerStatefulWidget {
   const QuestionnaireScreen({super.key, required this.questions});
@@ -104,96 +105,91 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(isGeneratingCVAndCoverLetterProvider);
+
     return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  // progress bar
-                  Column(
+      body: Stack(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     children: [
-                      (_currentPageIndex == 0 || _currentPageIndex == _totalPages - 1)
-                          ? AnimatedBuilder(
-                              animation: _linearController,
+                      Text(
+                        _getProgressText(),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      SizedBox(height: 24),
+                      // progress bar
+                      Column(
+                        children: [
+                          AnimatedSwitcher(
+                            duration: Duration(milliseconds: 150),
+                            switchInCurve: Curves.easeIn,
+                            switchOutCurve: Curves.easeOut,
 
-                              builder: (context, child) {
-                                final dx =
-                                    15 * math.sin(_linearController.value * 2 * math.pi);
-                                return Transform.translate(
-                                  offset: Offset(dx, 0),
-                                  child: child,
-                                );
-                              },
-                              child: Text(
-                                _getProgressText(),
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            )
-                          : Text(
-                              _getProgressText(),
-                              style: Theme.of(context).textTheme.titleMedium,
+                            child: LinearProgressIndicator(
+                              key: ValueKey(_currentPageIndex),
+                              value: (_currentPageIndex + 1) / _totalPages,
+                              backgroundColor: AppColors.kGray300,
+                              color: AppColors.kPrimary,
+                              borderRadius: BorderRadius.circular(kSmallRadius),
+                              minHeight: 8,
                             ),
-                      const SizedBox(height: 8),
-                      AnimatedSwitcher(
-                        duration: Duration(milliseconds: 150),
-                        switchInCurve: Curves.easeIn,
-                        switchOutCurve: Curves.easeOut,
+                          ),
+                        ],
+                      ),
 
-                        child: LinearProgressIndicator(
-                          key: ValueKey(_currentPageIndex),
-                          value: (_currentPageIndex + 1) / _totalPages,
-                          backgroundColor: AppColors.kGray300,
-                          color: AppColors.kPrimary,
-                          borderRadius: BorderRadius.circular(kSmallRadius),
-                          minHeight: 8,
+                      // question section
+                      Expanded(
+                        child: PageView.builder(
+                          controller: _pageController,
+                          physics:
+                              const NeverScrollableScrollPhysics(), // Disable swiping
+                          itemCount: _totalPages,
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentPageIndex = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            // Page 0: Intro
+                            if (index == 0) {
+                              return _buildIntroPage();
+                            }
+                            // Page N+1: Final
+                            if (index == _totalPages - 1) {
+                              return _buildFinalPage();
+                            }
+                            // Pages 1-N: Questions
+                            final questionIndex = index - 1;
+                            return _buildQuestionPage(
+                              widget.questions[questionIndex],
+                              _answerControllers[questionIndex],
+                              questionIndex + 1,
+                            );
+                          },
                         ),
                       ),
+
+                      if (_currentPageIndex != _totalPages - 1) // Hide on final page
+                        _buildNavigationRow(),
                     ],
                   ),
-
-                  // question section
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(), // Disable swiping
-                      itemCount: _totalPages,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentPageIndex = index;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        // Page 0: Intro
-                        if (index == 0) {
-                          return _buildIntroPage();
-                        }
-                        // Page N+1: Final
-                        if (index == _totalPages - 1) {
-                          return _buildFinalPage();
-                        }
-                        // Pages 1-N: Questions
-                        final questionIndex = index - 1;
-                        return _buildQuestionPage(
-                          widget.questions[questionIndex],
-                          _answerControllers[questionIndex],
-                          questionIndex + 1,
-                        );
-                      },
-                    ),
-                  ),
-
-                  if (_currentPageIndex != _totalPages - 1) // Hide on final page
-                    _buildNavigationRow(),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+          LoadingOverlay(
+            isLoading: isLoading,
+            headerText: 'Preparing your documents',
+            descriptionText: 'Structuring your CV and Cover Letter...',
+          ),
+        ],
       ),
     );
   }
@@ -263,10 +259,10 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "${AppLocalizations.of(context)!.question} $questionNumber of ${widget.questions.length}",
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
+          // Text(
+          //   "${AppLocalizations.of(context)!.question} $questionNumber of ${widget.questions.length}",
+          //   style: Theme.of(context).textTheme.labelLarge,
+          // ),
           const SizedBox(height: 12),
           SelectableText(question, style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 24),
@@ -285,7 +281,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'can you help us fill in this field, please? 🥹';
+                return AppLocalizations.of(context)!.errorMessageForQuestionnaire;
               }
               return null;
             },
@@ -297,7 +293,6 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
 
   Widget _buildFinalPage() {
     final buttonText = AppLocalizations.of(context)!.generateMyDocs;
-    final isGenerating = ref.watch(isGeneratingCVAndCoverLetterProvider);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -332,7 +327,6 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             textStyle: Theme.of(context).textTheme.titleLarge,
           ),
           onPressed: () async {
-            if (isGenerating) return;
             final isValid = _formKey.currentState!.validate();
 
             if (isValid) {
@@ -350,7 +344,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
               }
             }
           },
-          child: isGenerating ? CircularProgressIndicator() : Text(buttonText),
+          child: Text(buttonText),
         ),
       ],
     );

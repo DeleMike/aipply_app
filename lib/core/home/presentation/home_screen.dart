@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../widgets/loading_overlay.dart';
 import '../../../widgets/quote_block.dart';
+import '../application/providers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -37,235 +39,254 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final double screenWidth = kScreenWidth(context);
     final double panelWidth = _isPanelExpanded ? screenWidth * 0.5 : 90.0;
+    final isLoading = ref.watch(isGeneratingQuestionsProvider);
     return Scaffold(
-      body: Row(
+      body: Stack(
         children: [
-          AnimatedContainer(
-            duration: _animationDuration,
-            curve: Curves.easeInOut,
-            height: kScreenHeight(context),
-            width: panelWidth,
-            decoration: BoxDecoration(
-              color: AppColors.kPrimary,
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(kSmallRadius),
-                bottomRight: Radius.circular(kSmallRadius),
-              ),
-            ),
-
-            child: Stack(
-              children: [
-                AnimatedOpacity(
-                  duration: _animationDuration,
-                  opacity: _isPanelExpanded ? 1.0 : 0.0,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(AssetsImages.aipplyIcon),
-                        Text(
-                          AppLocalizations.of(context)!.appName.toUpperCase(),
-                          style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                            fontSize: 65,
-                            color: AppColors.kAccent,
-                          ),
-                        ),
-                      ],
-                    ),
+          Row(
+            children: [
+              AnimatedContainer(
+                duration: _animationDuration,
+                curve: Curves.easeInOut,
+                height: kScreenHeight(context),
+                width: panelWidth,
+                decoration: BoxDecoration(
+                  color: AppColors.kPrimary,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(kSmallRadius),
+                    bottomRight: Radius.circular(kSmallRadius),
                   ),
                 ),
 
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: IconButton(
-                      splashColor: AppColors.kAccent.withValues(alpha: 0.3),
-                      highlightColor: AppColors.kAccent.withValues(alpha: 0.2),
-                      icon: Icon(
-                        _isPanelExpanded
-                            ? Icons.keyboard_double_arrow_left_rounded
-                            : Icons.keyboard_double_arrow_right_rounded,
-                        color: AppColors.kAccent,
-                        size: 30,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPanelExpanded = !_isPanelExpanded;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Stack(
                   children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    AnimatedOpacity(
+                      duration: _animationDuration,
+                      opacity: _isPanelExpanded ? 1.0 : 0.0,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            Image.asset(AssetsImages.aipplyIcon),
                             Text(
-                              AppLocalizations.of(context)!.jobDescription.toUpperCase(),
-                              style: Theme.of(context).textTheme.headlineLarge,
-                            ),
-                            AnimatedSlide(
-                              offset: !_isPanelExpanded
-                                  ? Offset.zero
-                                  : const Offset(1, 0),
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                              child: AnimatedOpacity(
-                                opacity: !_isPanelExpanded ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 300),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Image.asset(
-                                        AssetsImages.aipplyIcon,
-                                        width: 50,
-                                        height: 50,
-                                      ),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.appName.toUpperCase(),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.labelLarge!.copyWith(),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              AppLocalizations.of(context)!.appName.toUpperCase(),
+                              style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                                fontSize: 65,
+                                color: AppColors.kAccent,
                               ),
                             ),
                           ],
                         ),
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
-                          child: QuoteBlock(
-                            text:
-                                "1. Paste the job description and select your experience.\n"
-                                "2. We'll generate key questions based on what the company is looking for.\n"
-                                "3. You'll answer those, and we'll write your CV and cover letter.",
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: GeneralInputField(
-                        widgetKey: 'jd_field',
-                        needsFieldName: false,
-                        fieldName: '',
-                        hintText: AppLocalizations.of(context)!.jobDescTextFieldHint,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your job description';
-                          }
-                          return null;
-                        },
-                        keyValueForDict: 'job_desc',
-                        userData: formData,
-                        keyboardType: TextInputType.multiline,
-                        errorProvider: null,
-                        enabled: true,
-                        actionWhenOnChangedisPressed: (value) {},
-                        textEditingController: null,
-                        textInputAction: TextInputAction.newline,
-                        focusNode: null,
-                        maxLines: null,
-                        expands: true,
                       ),
                     ),
 
-                    const SizedBox(height: 24),
-
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.experienceLevel.toUpperCase(),
-                          style: Theme.of(context).textTheme.headlineLarge,
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField2<String>(
-                          value: _selectedExperienceLevel,
-                          items: _experienceLevels.map((String level) {
-                            return DropdownMenuItem<String>(
-                              value: level,
-                              child: Text(level, style: TextStyle(height: 1.5)),
-                            );
-                          }).toList(),
-
-                          onChanged: (String? newValue) {
-                            if (newValue != null) {
-                              setState(() {
-                                _selectedExperienceLevel = newValue;
-                              });
-                            }
-                          },
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: AppColors.kGray300, // Or your preferred color
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(kSmallRadius),
-                              borderSide: BorderSide.none,
-                            ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: IconButton(
+                          splashColor: AppColors.kAccent.withValues(alpha: 0.3),
+                          highlightColor: AppColors.kAccent.withValues(alpha: 0.2),
+                          icon: Icon(
+                            _isPanelExpanded
+                                ? Icons.keyboard_double_arrow_left_rounded
+                                : Icons.keyboard_double_arrow_right_rounded,
+                            color: AppColors.kAccent,
+                            size: 30,
                           ),
+                          onPressed: () {
+                            setState(() {
+                              _isPanelExpanded = !_isPanelExpanded;
+                            });
+                          },
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    GeneralElevatedButton(
-                      onPressed: () {
-                        final isValid = _formKey.currentState!.validate();
-                        if (isValid) {
-                          final List<String> programmingQuestions = [
-                            "What is the difference between synchronous and asynchronous programming?",
-                            "How does state management work in Flutter?",
-                            "What is the purpose of using providers in Riverpod?",
-                            "How would you handle API errors gracefully in an app?",
-                            "What are the advantages of immutable data structures?",
-                            "How do you approach debugging complex issues in production?",
-                            "What is the difference between composition and inheritance?",
-                            "How do you ensure your code is clean and maintainable?",
-                            "Phew...finally, please provide in here your name and email?",
-                          ];
-
-                          context.goNamed(
-                            AppRouter.questionnaireScreen.substring(1),
-                            extra: {'questions': programmingQuestions},
-                          );
-                        }
-                      },
-                      borderRadius: 8,
-                      buttonHeight: 65,
-                      buttonColor: AppColors.kPrimary,
-                      child: Text(
-                        AppLocalizations.of(context)!.answerQuestions,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyLarge!.copyWith(color: AppColors.kWhite),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.jobDescription.toUpperCase(),
+                                  style: Theme.of(context).textTheme.headlineLarge,
+                                ),
+                                AnimatedSlide(
+                                  offset: !_isPanelExpanded
+                                      ? Offset.zero
+                                      : const Offset(1, 0),
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                  child: AnimatedOpacity(
+                                    opacity: !_isPanelExpanded ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 300),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            AssetsImages.aipplyIcon,
+                                            width: 50,
+                                            height: 50,
+                                          ),
+                                          Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.appName.toUpperCase(),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.labelLarge!.copyWith(),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
+                              child: QuoteBlock(
+                                text:
+                                    "1. Paste the job description and select your experience.\n"
+                                    "2. We'll generate key questions based on what the company is looking for.\n"
+                                    "3. You'll answer those, and we'll write your CV and cover letter.",
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: GeneralInputField(
+                            widgetKey: 'jd_field',
+                            needsFieldName: false,
+                            fieldName: '',
+                            hintText: AppLocalizations.of(context)!.jobDescTextFieldHint,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your job description';
+                              }
+                              return null;
+                            },
+                            keyValueForDict: 'job_desc',
+                            userData: formData,
+                            keyboardType: TextInputType.multiline,
+                            errorProvider: null,
+                            enabled: true,
+                            actionWhenOnChangedisPressed: (value) {},
+                            textEditingController: null,
+                            textInputAction: TextInputAction.newline,
+                            focusNode: null,
+                            maxLines: null,
+                            expands: true,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!.experienceLevel.toUpperCase(),
+                              style: Theme.of(context).textTheme.headlineLarge,
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField2<String>(
+                              value: _selectedExperienceLevel,
+                              items: _experienceLevels.map((String level) {
+                                return DropdownMenuItem<String>(
+                                  value: level,
+                                  child: Text(level, style: TextStyle(height: 1.5)),
+                                );
+                              }).toList(),
+
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedExperienceLevel = newValue;
+                                  });
+                                }
+                              },
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: AppColors.kGray300, // Or your preferred color
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(kSmallRadius),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        GeneralElevatedButton(
+                          onPressed: () async {
+                            final isValid = _formKey.currentState!.validate();
+                            if (isValid) {
+                              ref.read(isGeneratingQuestionsProvider.notifier).state =
+                                  true;
+                              await Future.delayed(Duration(seconds: 2));
+
+                              final List<String> programmingQuestions = [
+                                "What is the difference between synchronous and asynchronous programming?",
+                                "How does state management work in Flutter?",
+                                "What is the purpose of using providers in Riverpod?",
+                                "How would you handle API errors gracefully in an app?",
+                                "What are the advantages of immutable data structures?",
+                                "How do you approach debugging complex issues in production?",
+                                "What is the difference between composition and inheritance?",
+                                "How do you ensure your code is clean and maintainable?",
+                                "Phew...finally, please provide in here your name and email?",
+                              ];
+                              ref.read(isGeneratingQuestionsProvider.notifier).state =
+                                  false;
+                              if (context.mounted) {
+                                context.goNamed(
+                                  AppRouter.questionnaireScreen.substring(1),
+                                  extra: {'questions': programmingQuestions},
+                                );
+                              }
+                            }
+                          },
+                          borderRadius: 8,
+                          buttonHeight: 65,
+                          buttonColor: AppColors.kPrimary,
+                          child: Text(
+                            AppLocalizations.of(context)!.answerQuestions,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyLarge!.copyWith(color: AppColors.kWhite),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          LoadingOverlay(
+            isLoading: isLoading,
+            headerText: 'Generating Your Questions',
+            descriptionText: 'Analyzing your job description...',
           ),
         ],
       ),

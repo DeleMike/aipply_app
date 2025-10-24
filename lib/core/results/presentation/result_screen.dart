@@ -4,12 +4,15 @@ import 'package:aipply/utils/constants.dart';
 import 'package:aipply/utils/debug_fns.dart';
 import 'package:aipply/utils/dimensions.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_html_to_pdf/flutter_html_to_pdf.dart';
+import 'package:htmltopdfwidgets/htmltopdfwidgets.dart' as html_to_pdf;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:html_editor_enhanced/html_editor.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import '../../../utils/app_colors.dart';
+import '../../../widgets/loading_overlay.dart';
 
 class ResultScreen extends ConsumerStatefulWidget {
   final String cvHtml;
@@ -25,6 +28,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   final HtmlEditorController _coverLetterController = HtmlEditorController();
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(isDownloadingDocumentProvider);
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -80,22 +85,38 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     );
   }
 
-  /// Converts HTML to a PDF and triggers a download.
+  /// Converts HTML to a PDF and triggers a browser download.
   Future<void> _downloadAsPdf(HtmlEditorController controller, String filename) async {
+    // Get the current HTML from the editor
     final htmlContent = await controller.getText();
-    final directory = await getApplicationDocumentsDirectory();
-    final targetPath = directory.path;
     final targetFileName = filename.endsWith('.pdf') ? filename : '$filename.pdf';
 
-    // Generate PDF from HTML
-    final generatedPdfFile = await FlutterHtmlToPdf.convertFromHtmlContent(
-      htmlContent,
-      targetPath,
-      targetFileName,
-    );
+    try {
+      // Create a new PDF document
+      final pdf = pw.Document();
 
-    printOut('PDF saved at: ${generatedPdfFile.path}');
-    showToast('PDF saved at: ${generatedPdfFile.path}', textShouldBeInProd: true);
+      // Convert HTML string to a list of PDF widgets
+      final widgets = await html_to_pdf.HTMLToPdf().convert(htmlContent);
+
+      // Add those widgets to your PDF
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          maxPages: 200,
+          build: (context) {
+            return widgets;
+          },
+        ),
+      );
+
+      await Printing.sharePdf(bytes: await pdf.save(), filename: targetFileName);
+
+      printOut('Download triggered for: $filename');
+      showToast('Download started for $filename', textShouldBeInProd: true);
+    } catch (e) {
+      printOut('Error generating PDF: $e');
+      showToast('Failed to generate PDF', textShouldBeInProd: true);
+    }
   }
 
   /// Helper widget to build the content for each tab
@@ -111,14 +132,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
         children: [
           ElevatedButton.icon(
             icon: const Icon(Icons.cloud_download_outlined),
-            label: isDownloading
-                ? CircularProgressIndicator()
-                : Text(
-                    AppLocalizations.of(context)!.downloadAsAPDF,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium!.copyWith(color: AppColors.kTextOnPrimary),
-                  ),
+            label: Text(
+              AppLocalizations.of(context)!.downloadAsAPDF,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium!.copyWith(color: AppColors.kTextOnPrimary),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.kPrimary,
               foregroundColor: Colors.white,
@@ -134,30 +153,39 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           const SizedBox(height: 16),
 
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.kGray300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: HtmlEditor(
-                controller: controller,
-                htmlEditorOptions: HtmlEditorOptions(
-                  hint: AppLocalizations.of(context)!.yourDoc,
-                  initialText: initialHtml,
+            child: Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.kGray300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: HtmlEditor(
+                    controller: controller,
+                    htmlEditorOptions: HtmlEditorOptions(
+                      hint: AppLocalizations.of(context)!.yourDoc,
+                      initialText: initialHtml,
+                    ),
+                    htmlToolbarOptions: const HtmlToolbarOptions(
+                      toolbarPosition: ToolbarPosition.aboveEditor,
+                      defaultToolbarButtons: [
+                        StyleButtons(),
+                        FontSettingButtons(),
+                        ListButtons(),
+                        ParagraphButtons(),
+                      ],
+                    ),
+                    otherOptions: const OtherOptions(
+                      height: 500, // You can adjust this
+                    ),
+                  ),
                 ),
-                htmlToolbarOptions: const HtmlToolbarOptions(
-                  toolbarPosition: ToolbarPosition.aboveEditor,
-                  defaultToolbarButtons: [
-                    StyleButtons(),
-                    FontSettingButtons(),
-                    ListButtons(),
-                    ParagraphButtons(),
-                  ],
+                LoadingOverlay(
+                  isLoading: isDownloading,
+                  headerText: 'Downloading...',
+                  descriptionText: '',
                 ),
-                otherOptions: const OtherOptions(
-                  height: 500, // You can adjust this
-                ),
-              ),
+              ],
             ),
           ),
         ],
