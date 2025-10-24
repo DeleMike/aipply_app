@@ -28,8 +28,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   final HtmlEditorController _coverLetterController = HtmlEditorController();
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(isDownloadingDocumentProvider);
-
     return DefaultTabController(
       length: 2,
       child: Scaffold(

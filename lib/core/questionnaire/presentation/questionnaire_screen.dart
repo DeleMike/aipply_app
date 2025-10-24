@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:aipply/core/questionnaire/application/providers.dart';
 import 'package:aipply/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';

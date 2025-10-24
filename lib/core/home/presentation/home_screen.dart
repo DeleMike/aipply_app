@@ -41,73 +41,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final double panelWidth = _isPanelExpanded ? screenWidth * 0.5 : 90.0;
     final isLoading = ref.watch(isGeneratingQuestionsProvider);
     return Scaffold(
-      body: Stack(
+      body: Row(
         children: [
-          Row(
-            children: [
-              AnimatedContainer(
-                duration: _animationDuration,
-                curve: Curves.easeInOut,
-                height: kScreenHeight(context),
-                width: panelWidth,
-                decoration: BoxDecoration(
-                  color: AppColors.kPrimary,
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(kSmallRadius),
-                    bottomRight: Radius.circular(kSmallRadius),
+          AnimatedContainer(
+            duration: _animationDuration,
+            curve: Curves.easeInOut,
+            height: kScreenHeight(context),
+            width: panelWidth,
+            decoration: BoxDecoration(
+              color: AppColors.kPrimary,
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(kSmallRadius),
+                bottomRight: Radius.circular(kSmallRadius),
+              ),
+            ),
+
+            child: Stack(
+              children: [
+                AnimatedOpacity(
+                  duration: _animationDuration,
+                  opacity: _isPanelExpanded ? 1.0 : 0.0,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(AssetsImages.aipplyIcon),
+                        Text(
+                          AppLocalizations.of(context)!.appName.toUpperCase(),
+                          style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                            fontSize: 65,
+                            color: AppColors.kAccent,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
-                child: Stack(
-                  children: [
-                    AnimatedOpacity(
-                      duration: _animationDuration,
-                      opacity: _isPanelExpanded ? 1.0 : 0.0,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(AssetsImages.aipplyIcon),
-                            Text(
-                              AppLocalizations.of(context)!.appName.toUpperCase(),
-                              style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                                fontSize: 65,
-                                color: AppColors.kAccent,
-                              ),
-                            ),
-                          ],
-                        ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: IconButton(
+                      splashColor: AppColors.kAccent.withValues(alpha: 0.3),
+                      highlightColor: AppColors.kAccent.withValues(alpha: 0.2),
+                      icon: Icon(
+                        _isPanelExpanded
+                            ? Icons.keyboard_double_arrow_left_rounded
+                            : Icons.keyboard_double_arrow_right_rounded,
+                        color: AppColors.kAccent,
+                        size: 30,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          _isPanelExpanded = !_isPanelExpanded;
+                        });
+                      },
                     ),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: IconButton(
-                          splashColor: AppColors.kAccent.withValues(alpha: 0.3),
-                          highlightColor: AppColors.kAccent.withValues(alpha: 0.2),
-                          icon: Icon(
-                            _isPanelExpanded
-                                ? Icons.keyboard_double_arrow_left_rounded
-                                : Icons.keyboard_double_arrow_right_rounded,
-                            color: AppColors.kAccent,
-                            size: 30,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isPanelExpanded = !_isPanelExpanded;
-                            });
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              Expanded(
-                child: Padding(
+          Expanded(
+            child: Stack(
+              children: [
+                Padding(
                   padding: const EdgeInsets.all(32),
                   child: Form(
                     key: _formKey,
@@ -280,13 +280,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          LoadingOverlay(
-            isLoading: isLoading,
-            headerText: 'Generating Your Questions',
-            descriptionText: 'Analyzing your job description...',
+                LoadingOverlay(
+                  isLoading: isLoading,
+                  headerText: 'Generating Your Questions',
+                  descriptionText: 'Analyzing your job description...',
+                ),
+              ],
+            ),
           ),
         ],
       ),
