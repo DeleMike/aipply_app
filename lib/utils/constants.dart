@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'app_colors.dart';
 
-const String kAppName = 'Drazex';
+const String kAppName = 'AIpply';
 
 final kCovertToCurrencyForm = NumberFormat("#,##0.00", "en_US");
 
