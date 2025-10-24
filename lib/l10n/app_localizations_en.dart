@@ -25,4 +25,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get answerQuestions => 'Answer Questions';
+
+  @override
+  String get youAreSet => 'You\'re all set!';
+
+  @override
+  String get youAreSetDesc => 'We\'re ready to build your CV and cover letter.';
+
+  @override
+  String get letsGetStarted => 'Let\'s get started';
+
+  @override
+  String get allDone => 'All done!';
+
+  @override
+  String get question => 'Question';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get next => 'Next';
+
+  @override
+  String get introDesc1 => 'Just a few questions...';
+
+  @override
+  String get introDesc2 =>
+      'We\'ll use your answers to build a CV and cover letter tailored just for you.';
+
+  @override
+  String get yourAnswerHere => 'Your answer here...';
+
+  @override
+  String get youAreAllSet => 'You\'re all set!';
+
+  @override
+  String get youAreAllSetDesc =>
+      'We\'re ready to build your CV and cover letter.';
+
+  @override
+  String get generateMyDocs => 'Generate My Documents';
 }

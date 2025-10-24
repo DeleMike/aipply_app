@@ -129,6 +129,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Answer Questions'**
   String get answerQuestions;
+
+  /// No description provided for @youAreSet.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set!'**
+  String get youAreSet;
+
+  /// No description provided for @youAreSetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re ready to build your CV and cover letter.'**
+  String get youAreSetDesc;
+
+  /// No description provided for @letsGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s get started'**
+  String get letsGetStarted;
+
+  /// No description provided for @allDone.
+  ///
+  /// In en, this message translates to:
+  /// **'All done!'**
+  String get allDone;
+
+  /// No description provided for @question.
+  ///
+  /// In en, this message translates to:
+  /// **'Question'**
+  String get question;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// Just a few questions...
+  ///
+  /// In en, this message translates to:
+  /// **'Just a few questions...'**
+  String get introDesc1;
+
+  /// We'll use your answers to build a CV and cover letter tailored just for you.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll use your answers to build a CV and cover letter tailored just for you.'**
+  String get introDesc2;
+
+  /// No description provided for @yourAnswerHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer here...'**
+  String get yourAnswerHere;
+
+  /// No description provided for @youAreAllSet.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all set!'**
+  String get youAreAllSet;
+
+  /// No description provided for @youAreAllSetDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re ready to build your CV and cover letter.'**
+  String get youAreAllSetDesc;
+
+  /// No description provided for @generateMyDocs.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate My Documents'**
+  String get generateMyDocs;
 }
 
 class _AppLocalizationsDelegate

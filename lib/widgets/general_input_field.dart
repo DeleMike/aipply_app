@@ -39,6 +39,7 @@ class GeneralInputField extends ConsumerWidget {
     this.hasSelectedTimeProvider,
     this.isDOB = false,
     this.expands = false,
+    this.textInputAction = TextInputAction.newline,
   });
 
   final String widgetKey;
@@ -52,6 +53,7 @@ class GeneralInputField extends ConsumerWidget {
   final bool enabled;
   final Function(String?)? actionWhenOnChangedisPressed;
   final TextEditingController? textEditingController;
+  final TextInputAction textInputAction;
   final int? minLines;
   final int? maxLines;
   final String? initialValue;
@@ -86,13 +88,12 @@ class GeneralInputField extends ConsumerWidget {
       controller: textEditingController,
       keyboardType: keyboardType,
       focusNode: focusNode,
-      textInputAction: nextFocusNode != null
-          ? TextInputAction.next
-          : TextInputAction.done,
+      textInputAction: textInputAction,
       textAlignVertical: TextAlignVertical.top,
       minLines: minLines,
       maxLines: maxLines,
-      expands: true,
+      expands: expands,
+
       initialValue: initialValue,
       obscureText: isPassword,
       decoration: InputDecoration(
