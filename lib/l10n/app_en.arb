@@ -23,5 +23,51 @@
   "answerQuestions":"Answer Questions",
   "@answerQuestions":{
     "description": "Answer Questions"
-  }
+  },
+  "youAreSet":"You're all set!",
+  "@youAreSet":{},
+  "youAreSetDesc":"We're ready to build your CV and cover letter.",
+  "@youAreSetDesc":{},
+  "letsGetStarted":"Let's get started",
+  "@letsGetStarted":{},
+  "allDone":"All done!",
+  "@allDone":{},
+  "question":"Question",
+  "@question":{},
+  "back":"Back",
+  "@back":{},
+  "next":"Next",
+  "@next":{},
+  "introDesc1":"Just a few questions...",
+  "@introDesc1":{
+    "description": "Just a few questions..."
+  },
+  "introDesc2":"We'll use your answers to build a CV and cover letter tailored just for you.",
+  "@introDesc2":{
+    "description": "We'll use your answers to build a CV and cover letter tailored just for you."
+  },
+  "yourAnswerHere":"Your answer here...",
+  "@yourAnswerHere":{},
+  "youAreAllSet":"You're all set!",
+  "@youAreAllSet":{},
+  "youAreAllSetDesc":"We're ready to build your CV and cover letter.",
+  "@youAreAllSetDesc":{},
+  "generateMyDocs":"Generate My Documents",
+  "@generateMyDocs":{},
+  "errorMessageForQuestionnaire":"can you help us fill in this field, please? 🥹",
+  "@errorMessageForQuestionnaire":{},
+  "yourDocs":"Your Documents",
+  "@yourDocs":{},
+  "cv":"CV",
+  "@cv":{},
+  "coverLetter":"Cover Letter",
+  "@coverLetter":{},
+  "downloadCV":"Download CV.pdf",
+  "@downloadCV":{},
+  "downloadCoverLetter":"Download Cover Letter.pdf",
+  "@downloadCoverLetter":{},
+  "downloadAsAPDF":"Download as PDF",
+  "@downloadAsAPDF":{},
+  "yourDoc":"Your document...",
+  "@yourDoc":{}
 }
