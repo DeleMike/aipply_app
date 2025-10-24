@@ -1,3 +1,4 @@
+import 'package:aipply/core/home/presentation/result_screen.dart';
 import 'package:aipply/core/questionnaire/presentation/questionnaire_screen.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ class AppRouter {
   static const initialScreen = '/';
   static const homeScreen = '/home-screen';
   static const questionnaireScreen = '/questionnaire-screen';
+  static const resultsScreen = '/result-screen';
 
   static GoRouter getRouter() {
     return GoRouter(
@@ -49,6 +51,27 @@ class AppRouter {
               context: context,
               state: state,
               child: QuestionnaireScreen(questions: questions),
+            );
+          },
+        ),
+
+        GoRoute(
+          path: resultsScreen,
+          name: resultsScreen.substring(1),
+          builder: (context, state) {
+            final arguments = state.extra as Map;
+            final cvHTML = arguments['cv_html'];
+            final coverLetterHTML = arguments['cover_letter_html'];
+            return ResultScreen(cvHtml: cvHTML, coverLetterHtml: coverLetterHTML);
+          },
+          pageBuilder: (context, state) {
+            final arguments = state.extra as Map;
+            final cvHTML = arguments['cv_html'];
+            final coverLetterHTML = arguments['cover_letter_html'];
+            return buildPageWithDefaultTransition<void>(
+              context: context,
+              state: state,
+              child: ResultScreen(cvHtml: cvHTML, coverLetterHtml: coverLetterHTML),
             );
           },
         ),

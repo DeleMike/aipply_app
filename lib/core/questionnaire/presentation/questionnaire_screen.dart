@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:aipply/l10n/app_localizations.dart';
-import 'package:aipply/utils/debug_fns.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aipply/utils/app_colors.dart';
 import 'package:aipply/utils/dimensions.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../utils/app_router.dart';
 
 class QuestionnaireScreen extends ConsumerStatefulWidget {
   const QuestionnaireScreen({super.key, required this.questions});
@@ -81,24 +83,32 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     );
   }
 
-  void _generateDocuments() {
-    // 1. Gather all answers
+  void _generateDocuments() async {
     final answers = <String, String>{};
     for (int i = 0; i < widget.questions.length; i++) {
       answers[widget.questions[i]] = _answerControllers[i].text;
     }
 
-    // 2. TODO: Call your Riverpod provider to make the API call
-    // final apiProvider = ref.read(apiProvider.notifier);
-    // await apiProvider.generateDocuments(jobDescription, answers);
+    final response = await _fakeApiCall();
 
-    // 3. For now, just print and pop
-    printOut("--- Generating Documents ---");
-    printOut("Answers: $answers");
-    printOut("----------------------------");
+    if (mounted) {
+      context.goNamed(
+        AppRouter.resultsScreen.substring(1),
+        extra: {
+          'cv_html': response['cv_html'],
+          'cover_letter_html': response['cover_letter_html'],
+        },
+      );
+    }
+  }
 
-    // TODO: Navigate to the final results screen
-    // context.goNamed(AppRouter.resultsScreen.substring(1));
+  Future<Map<String, String>> _fakeApiCall() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    return {
+      "cv_html": "<h1>Jane Doe</h1><h2>Work Experience</h2><p>...</p>",
+      "cover_letter_html": "<h2>Dear Hiring Manager,</h2><p>...</p>",
+    };
   }
 
   @override
