@@ -6,7 +6,7 @@ import '../../utils/debug_fns.dart';
 class ApiConfigService {
   Dio dio = Dio();
 
-  static const devBaseUrl = 'localhost:5050/api/v1/';
+  static const devBaseUrl = 'http://localhost:5050/api/v1/';
 
   /// Configuration Service for Dio
   ApiConfigService();

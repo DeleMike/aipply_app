@@ -241,29 +241,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           onPressed: () async {
                             final isValid = _formKey.currentState!.validate();
                             if (isValid) {
+                              _formKey.currentState!.save();
+                              print('FomrData = $formData');
                               ref.read(isGeneratingQuestionsProvider.notifier).state =
                                   true;
-                              await Future.delayed(Duration(seconds: 2));
 
-                              final List<String> programmingQuestions = [
-                                "What is the difference between synchronous and asynchronous programming?",
-                                "How does state management work in Flutter?",
-                                "What is the purpose of using providers in Riverpod?",
-                                "How would you handle API errors gracefully in an app?",
-                                "What are the advantages of immutable data structures?",
-                                "How do you approach debugging complex issues in production?",
-                                "What is the difference between composition and inheritance?",
-                                "How do you ensure your code is clean and maintainable?",
-                                "Phew...finally, please provide in here your name and email?",
-                              ];
+                              final questions = await ref
+                                  .read(questionGeneratorController)
+                                  .generateQuestions(formData['job_desc'], 'mid');
+
+                              print('Questions = $questions');
+
+                              // final List<String> programmingQuestions = [
+                              //   "What is the difference between synchronous and asynchronous programming?",
+                              //   "How does state management work in Flutter?",
+                              //   "What is the purpose of using providers in Riverpod?",
+                              //   "How would you handle API errors gracefully in an app?",
+                              //   "What are the advantages of immutable data structures?",
+                              //   "How do you approach debugging complex issues in production?",
+                              //   "What is the difference between composition and inheritance?",
+                              //   "How do you ensure your code is clean and maintainable?",
+                              //   "Phew...finally, please provide in here your name and email?",
+                              // ];
+
                               ref.read(isGeneratingQuestionsProvider.notifier).state =
                                   false;
-                              if (context.mounted) {
-                                context.goNamed(
-                                  AppRouter.questionnaireScreen.substring(1),
-                                  extra: {'questions': programmingQuestions},
-                                );
-                              }
+                              // if (context.mounted) {
+                              //   context.goNamed(
+                              //     AppRouter.questionnaireScreen.substring(1),
+                              //     extra: {'questions': questions},
+                              //   );
+                              // }
                             }
                           },
                           borderRadius: 8,

@@ -24,6 +24,8 @@ const String kBodyFont = 'Lato';
 
 const nA = 'N/A';
 
+const noOrPoorConnection = 'No or poor connnection';
+
 void showToast(
   String message, {
   wantsLongText = false,
