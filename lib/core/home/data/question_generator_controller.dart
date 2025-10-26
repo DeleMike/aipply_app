@@ -1,9 +1,8 @@
-import 'package:aipply/core/home/domain/question.dart';
 import 'package:aipply/network/api_repository.dart';
 import 'package:flutter/widgets.dart';
 
 class QuestionGeneratorController with ChangeNotifier {
-  final apiRepo = ApiRepository();
+  final _apiRepo = ApiRepository();
 
   Future<List<String>> generateQuestions(
     String jobDescription,
@@ -18,7 +17,7 @@ class QuestionGeneratorController with ChangeNotifier {
         "experience_level": "mid",
       };
 
-      final questionsFromApi = await apiRepo.generateQuestions(payload: payload);
+      final questionsFromApi = await _apiRepo.generateQuestions(payload: payload);
 
       // convert to string
       for (var question in questionsFromApi) {

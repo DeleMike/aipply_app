@@ -267,7 +267,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               if (context.mounted) {
                                 context.goNamed(
                                   AppRouter.questionnaireScreen.substring(1),
-                                  extra: {'questions': questions},
+                                  extra: {
+                                    'questions': questions,
+                                    'jd': formData['job_desc'],
+                                  },
                                 );
                               }
                             }

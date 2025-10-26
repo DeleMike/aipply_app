@@ -42,15 +42,19 @@ class AppRouter {
           builder: (context, state) {
             final arguments = state.extra as Map;
             final questions = arguments['questions'];
-            return QuestionnaireScreen(questions: questions);
+            final jd = arguments['jd'];
+
+            return QuestionnaireScreen(questions: questions, jobDesc:jd);
           },
           pageBuilder: (context, state) {
             final arguments = state.extra as Map;
             final questions = arguments['questions'];
+            final jd = arguments['jd'];
+
             return buildPageWithDefaultTransition<void>(
               context: context,
               state: state,
-              child: QuestionnaireScreen(questions: questions),
+              child: QuestionnaireScreen(questions: questions, jobDesc:jd),
             );
           },
         ),

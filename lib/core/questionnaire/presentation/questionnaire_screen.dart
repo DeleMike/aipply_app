@@ -1,4 +1,6 @@
 import 'package:aipply/core/questionnaire/application/providers.dart';
+import 'package:aipply/core/questionnaire/domain/cover_letter_document.dart';
+import 'package:aipply/core/questionnaire/domain/cv_document.dart';
 import 'package:aipply/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,11 +10,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../../utils/app_router.dart';
 import '../../../widgets/loading_overlay.dart';
+import '../domain/qa.dart';
 
 class QuestionnaireScreen extends ConsumerStatefulWidget {
-  const QuestionnaireScreen({super.key, required this.questions});
+  const QuestionnaireScreen({super.key, required this.questions, required this.jobDesc});
 
   final List<String> questions;
+  final String jobDesc;
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _QuestionnaireScreenState();
@@ -49,7 +53,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     );
 
     // Total pages = 1 (Intro) + N (Questions) + 1 (Final)
-    _totalPages = widget.questions.length + 2;
+    _totalPages = _allQuestions.length + 2;
 
     _rotationController = AnimationController(
       duration: const Duration(seconds: 16),
@@ -92,22 +96,64 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     );
   }
 
-  Future<Map<String, String>> _generateDocuments() async {
-    final answers = <String, String>{};
-    for (int i = 0; i < _allQuestions.length; i++) {
-      answers[_allQuestions[i]] = _answerControllers[i].text;
+  Future<Map<String, String>> _generateDocuments({int retryCount = 0}) async {
+    const maxRetries = 3;
+
+    try {
+      final List<QA> qaList = [
+        for (int i = 0; i < _allQuestions.length; i++)
+          QA(question: _allQuestions[i], answer: _answerControllers[i].text.trim()),
+      ];
+
+      final qaJsonList = qaList.map((qa) => qa.toJson()).toList();
+
+      final cvFuture = ref
+          .read(cvDocumentProvider)
+          .generateCV(widget.jobDesc, qaJsonList);
+      final coverLetterFuture = ref
+          .read(coverLetterDocumentProvider)
+          .generateCoverLetter(widget.jobDesc, qaJsonList);
+
+      final results = await Future.wait([cvFuture, coverLetterFuture]);
+
+      final cv = results[0] as CVDocument;
+      final coverLetter = results[1] as CoverLetterDocument;
+
+      return {"cv_html": cv.text, "cover_letter_html": coverLetter.text};
+    } catch (e) {
+      // Check if we should retry
+      if (retryCount < maxRetries) {
+        // Show retry message to user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Connection issue. Retrying... (${retryCount + 1}/$maxRetries)',
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Wait a bit before retrying (exponential backoff)
+        await Future.delayed(Duration(seconds: 2 * (retryCount + 1)));
+
+        // Retry
+        return _generateDocuments(retryCount: retryCount + 1);
+      } else {
+        // Max retries reached, show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to generate documents. Please try again.'),
+              duration: const Duration(seconds: 4),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        rethrow;
+      }
     }
-
-    return await _fakeApiCall();
-  }
-
-  Future<Map<String, String>> _fakeApiCall() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    return {
-      "cv_html": "<h1>Jane Doe</h1><h2>Work Experience</h2><p>...</p>",
-      "cover_letter_html": "<h2>Dear Hiring Manager,</h2><p>...</p>",
-    };
   }
 
   @override
@@ -349,16 +395,20 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
           ),
           onPressed: () async {
             ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = true;
-            final response = await _generateDocuments();
-            ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
-            if (mounted) {
-              context.goNamed(
-                AppRouter.resultsScreen.substring(1),
-                extra: {
-                  'cv_html': response['cv_html'],
-                  'cover_letter_html': response['cover_letter_html'],
-                },
-              );
+            try {
+              final response = await _generateDocuments();
+              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
+              if (mounted) {
+                context.goNamed(
+                  AppRouter.resultsScreen.substring(1),
+                  extra: {
+                    'cv_html': response['cv_html'],
+                    'cover_letter_html': response['cover_letter_html'],
+                  },
+                );
+              }
+            } catch (e) {
+              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
             }
           },
           child: Text(buttonText),
