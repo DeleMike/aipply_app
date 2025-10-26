@@ -329,6 +329,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             controller: controller,
             maxLines: isStaticQuestion ? 5 : 8,
             textInputAction: TextInputAction.newline,
+           
             decoration: InputDecoration(
               hintText: hintText,
               filled: true,
@@ -346,10 +347,10 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
               if (value == null || value.isEmpty || (value.trim().isEmpty)) {
                 return AppLocalizations.of(context)!.errorMessageForQuestionnaire;
               }
-              if (!isStaticQuestion &&
-                  value.split(' ').where((s) => s.isNotEmpty).length < 25) {
-                return AppLocalizations.of(context)!.errorMessageForQuestionnaire2;
-              }
+              // if (!isStaticQuestion &&
+              //     value.split(' ').where((s) => s.isNotEmpty).length < 25) {
+              //   return AppLocalizations.of(context)!.errorMessageForQuestionnaire2;
+              // }
               return null;
             },
           ),
