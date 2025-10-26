@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # This tells json_serializable to NOT generate a toJson() method
+          # because freezed already takes care of it. This resolves the conflict.
+          create_to_json: false
