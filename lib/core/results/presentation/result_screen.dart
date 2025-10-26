@@ -13,11 +13,40 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../utils/app_colors.dart';
 import '../../../widgets/loading_overlay.dart';
+import '../../questionnaire/application/providers.dart';
+
+/// Keeps child widgets alive when switching tabs
+class KeepAlive extends StatefulWidget {
+  final Widget child;
+  const KeepAlive({super.key, required this.child});
+
+  @override
+  State<KeepAlive> createState() => _KeepAliveState();
+}
+
+class _KeepAliveState extends State<KeepAlive> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
 
 class ResultScreen extends ConsumerStatefulWidget {
   final String cvHtml;
   final String coverLetterHtml;
-  const ResultScreen({super.key, required this.cvHtml, required this.coverLetterHtml});
+  final String jobDesc;
+  final List<Map<String, dynamic>> qaListJson;
+
+  const ResultScreen({
+    super.key,
+    required this.cvHtml,
+    required this.coverLetterHtml,
+    required this.jobDesc,
+    required this.qaListJson,
+  });
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() => _ResultScreenState();
@@ -26,6 +55,52 @@ class ResultScreen extends ConsumerStatefulWidget {
 class _ResultScreenState extends ConsumerState<ResultScreen> {
   final HtmlEditorController _cvController = HtmlEditorController();
   final HtmlEditorController _coverLetterController = HtmlEditorController();
+  late String _currentCvHtml;
+  late String _currentCoverLetterHtml;
+
+  final _isRefetchingCv = StateProvider<bool>((ref) => false);
+  final _isRefetchingCoverLetter = StateProvider<bool>((ref) => false);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCvHtml = widget.cvHtml;
+    _currentCoverLetterHtml = widget.coverLetterHtml;
+  }
+
+  Future<void> _refetchDocument(String docType) async {
+    final provider = (docType == 'cv') ? _isRefetchingCv : _isRefetchingCoverLetter;
+    ref.read(provider.notifier).state = true;
+
+    try {
+      String newHtml;
+      if (docType == 'cv') {
+        final cvDoc = await ref
+            .read(cvDocumentProvider)
+            .generateCV(widget.jobDesc, widget.qaListJson);
+        newHtml = cvDoc.text;
+        setState(() => _currentCvHtml = newHtml);
+        _cvController.setText(newHtml);
+      } else {
+        final clDoc = await ref
+            .read(coverLetterDocumentProvider)
+            .generateCoverLetter(widget.jobDesc, widget.qaListJson);
+        newHtml = clDoc.text;
+        setState(() => _currentCoverLetterHtml = newHtml);
+        _coverLetterController.setText(newHtml);
+      }
+      showToast('Document regenerated successfully!', textShouldBeInProd: true);
+    } catch (e) {
+      printOut('Error refetching document: $e');
+      showToast(
+        'Failed to regenerate document. Please try again.',
+        textShouldBeInProd: true,
+      );
+    } finally {
+      ref.read(provider.notifier).state = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -36,7 +111,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             padding: const EdgeInsets.only(top: kPaddingS),
             child: Text(
               AppLocalizations.of(context)!.yourDocs,
-
               style: Theme.of(context).textTheme.displayLarge!.copyWith(
                 color: AppColors.kTextOnPrimary,
                 height: 1.5,
@@ -67,15 +141,23 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
         ),
         body: TabBarView(
           children: [
-            _buildEditorTab(
-              _cvController,
-              widget.cvHtml,
-              AppLocalizations.of(context)!.downloadCV,
+            KeepAlive(
+              child: _buildEditorTab(
+                controller: _cvController,
+                initialHtml: _currentCvHtml,
+                downloadFilename: AppLocalizations.of(context)!.downloadCV,
+                docType: 'cv',
+                isRefetchingProvider: _isRefetchingCv,
+              ),
             ),
-            _buildEditorTab(
-              _coverLetterController,
-              widget.coverLetterHtml,
-              AppLocalizations.of(context)!.coverLetter,
+            KeepAlive(
+              child: _buildEditorTab(
+                controller: _coverLetterController,
+                initialHtml: _currentCoverLetterHtml,
+                downloadFilename: AppLocalizations.of(context)!.coverLetter,
+                docType: 'cl',
+                isRefetchingProvider: _isRefetchingCoverLetter,
+              ),
             ),
           ],
         ),
@@ -85,30 +167,18 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
   /// Converts HTML to a PDF and triggers a browser download.
   Future<void> _downloadAsPdf(HtmlEditorController controller, String filename) async {
-    // Get the current HTML from the editor
     final htmlContent = await controller.getText();
     final targetFileName = filename.endsWith('.pdf') ? filename : '$filename.pdf';
 
     try {
-      // Create a new PDF document
       final pdf = pw.Document();
-
-      // Convert HTML string to a list of PDF widgets
       final widgets = await html_to_pdf.HTMLToPdf().convert(htmlContent);
 
-      // Add those widgets to your PDF
       pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          maxPages: 200,
-          build: (context) {
-            return widgets;
-          },
-        ),
+        pw.MultiPage(pageFormat: PdfPageFormat.a4, maxPages: 200, build: (_) => widgets),
       );
 
       await Printing.sharePdf(bytes: await pdf.save(), filename: targetFileName);
-
       printOut('Download triggered for: $filename');
       showToast('Download started for $filename', textShouldBeInProd: true);
     } catch (e) {
@@ -117,13 +187,56 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     }
   }
 
-  /// Helper widget to build the content for each tab
-  Widget _buildEditorTab(
-    HtmlEditorController controller,
-    String initialHtml,
-    String downloadFilename,
-  ) {
+  Widget _buildEditorTab({
+    required HtmlEditorController controller,
+    required String initialHtml,
+    required String downloadFilename,
+    required String docType,
+    required StateProvider<bool> isRefetchingProvider,
+  }) {
     final isDownloading = ref.watch(isDownloadingDocumentProvider);
+    final isRefetching = ref.watch(isRefetchingProvider);
+    final bool hasContent = initialHtml.trim().isNotEmpty;
+
+    if (!hasContent) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
+              const SizedBox(height: 16),
+              Text(
+                'Generation Failed',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'There was an issue generating this document. Please try again.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 24),
+              if (isRefetching)
+                const CircularProgressIndicator()
+              else
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry Generation'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.kPrimary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  ),
+                  onPressed: () => _refetchDocument(docType),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -149,7 +262,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             },
           ),
           const SizedBox(height: 16),
-
           Expanded(
             child: Stack(
               children: [
@@ -173,15 +285,18 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                         ParagraphButtons(),
                       ],
                     ),
-                    otherOptions: const OtherOptions(
-                      height: 500, // You can adjust this
-                    ),
+                    otherOptions: const OtherOptions(height: 500),
                   ),
                 ),
                 LoadingOverlay(
                   isLoading: isDownloading,
                   headerText: 'Downloading...',
                   descriptionText: '',
+                ),
+                LoadingOverlay(
+                  isLoading: isRefetching,
+                  headerText: 'Regenerating...',
+                  descriptionText: 'Please wait...',
                 ),
               ],
             ),

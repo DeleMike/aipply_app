@@ -44,7 +44,7 @@ class AppRouter {
             final questions = arguments['questions'];
             final jd = arguments['jd'];
 
-            return QuestionnaireScreen(questions: questions, jobDesc:jd);
+            return QuestionnaireScreen(questions: questions, jobDesc: jd);
           },
           pageBuilder: (context, state) {
             final arguments = state.extra as Map;
@@ -54,7 +54,7 @@ class AppRouter {
             return buildPageWithDefaultTransition<void>(
               context: context,
               state: state,
-              child: QuestionnaireScreen(questions: questions, jobDesc:jd),
+              child: QuestionnaireScreen(questions: questions, jobDesc: jd),
             );
           },
         ),
@@ -66,16 +66,30 @@ class AppRouter {
             final arguments = state.extra as Map;
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
-            return ResultScreen(cvHtml: cvHTML, coverLetterHtml: coverLetterHTML);
+            final jobDesc = arguments['job_desc'];
+            final qaListJson = arguments['qa_list_json'];
+            return ResultScreen(
+              cvHtml: cvHTML,
+              coverLetterHtml: coverLetterHTML,
+              jobDesc: jobDesc,
+              qaListJson: qaListJson,
+            );
           },
           pageBuilder: (context, state) {
             final arguments = state.extra as Map;
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
+            final jobDesc = arguments['job_desc'];
+            final qaListJson = arguments['qa_list_json'];
             return buildPageWithDefaultTransition<void>(
               context: context,
               state: state,
-              child: ResultScreen(cvHtml: cvHTML, coverLetterHtml: coverLetterHTML),
+              child: ResultScreen(
+                cvHtml: cvHTML,
+                coverLetterHtml: coverLetterHTML,
+                jobDesc: jobDesc,
+                qaListJson: qaListJson,
+              ),
             );
           },
         ),

@@ -96,16 +96,19 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     );
   }
 
-  Future<Map<String, String>> _generateDocuments({int retryCount = 0}) async {
+  Future<Map<String, String>> _generateDocuments(
+    List<Map<String, dynamic>> qaJsonList, {
+    int retryCount = 0,
+  }) async {
     const maxRetries = 3;
 
     try {
-      final List<QA> qaList = [
-        for (int i = 0; i < _allQuestions.length; i++)
-          QA(question: _allQuestions[i], answer: _answerControllers[i].text.trim()),
-      ];
+      // final List<QA> qaList = [
+      //   for (int i = 0; i < _allQuestions.length; i++)
+      //     QA(question: _allQuestions[i], answer: _answerControllers[i].text.trim()),
+      // ];
 
-      final qaJsonList = qaList.map((qa) => qa.toJson()).toList();
+      // final qaJsonList = qaList.map((qa) => qa.toJson()).toList();
 
       final cvFuture = ref
           .read(cvDocumentProvider)
@@ -139,7 +142,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
         await Future.delayed(Duration(seconds: 2 * (retryCount + 1)));
 
         // Retry
-        return _generateDocuments(retryCount: retryCount + 1);
+        return _generateDocuments(qaJsonList, retryCount: retryCount + 1);
       } else {
         // Max retries reached, show error
         if (mounted) {
@@ -329,7 +332,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             controller: controller,
             maxLines: isStaticQuestion ? 5 : 8,
             textInputAction: TextInputAction.newline,
-           
+
             decoration: InputDecoration(
               hintText: hintText,
               filled: true,
@@ -395,9 +398,14 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             textStyle: Theme.of(context).textTheme.titleLarge,
           ),
           onPressed: () async {
+            final List<QA> qaList = [
+              for (int i = 0; i < _allQuestions.length; i++)
+                QA(question: _allQuestions[i], answer: _answerControllers[i].text.trim()),
+            ];
+            final qaJsonList = qaList.map((qa) => qa.toJson()).toList();
             ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = true;
             try {
-              final response = await _generateDocuments();
+              final response = await _generateDocuments(qaJsonList);
               ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
               if (mounted) {
                 context.goNamed(
@@ -405,6 +413,8 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
                   extra: {
                     'cv_html': response['cv_html'],
                     'cover_letter_html': response['cover_letter_html'],
+                    'job_desc': widget.jobDesc,
+                    'qa_list_json': qaJsonList,
                   },
                 );
               }
