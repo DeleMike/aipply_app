@@ -3,63 +3,46 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class Question {
-  final List<String> questions;
+  final String question;
 
-  const Question({required this.questions});
+  const Question({required this.question});
 
-  /// Factory to create an empty Question object
-  factory Question.empty() {
-    return const Question(questions: []);
-  }
+  /// Creates an empty Question instance.
+  factory Question.empty() => const Question(question: '');
 
   /// Creates a copy of the instance with the given fields replaced.
-  Question copyWith({List<String>? questions}) {
-    return Question(questions: questions ?? this.questions);
+  Question copyWith({String? question}) {
+    return Question(question: question ?? this.question);
   }
 
-  /// Deserializes a Map (JSON) into a [Question] instance
-  factory Question.fromJson(Map<String, dynamic> json) {
-    return Question(
-      // Ensures that the JSON list is correctly parsed as List<String>
-      questions: List<String>.from(json['questions'] ?? []),
-    );
+  /// Creates a [Question] from a JSON value (string or map).
+  factory Question.fromJson(dynamic json) {
+    if (json is String) {
+      return Question(question: json);
+    } else if (json is Map<String, dynamic>) {
+      return Question(question: json['question'] ?? '');
+    } else {
+      throw ArgumentError('Invalid JSON for Question: $json');
+    }
   }
 
-  /// Serializes a [Question] instance into a Map (JSON)
-  Map<String, dynamic> toJson() {
-    return {'questions': questions};
-  }
+  /// Converts the Question to JSON.
+  Map<String, dynamic> toJson() => {'question': question};
 
-  // --- Static Helpers ---
+  /// Encodes a Question into a JSON string.
+  static String encode(Question question) => json.encode(question.toJson());
 
-  /// Helper to get a Map from a [Question] instance
-  static Map<String, dynamic> toMap(Question question) => question.toJson();
-
-  /// Helper to decode a JSON string into a [Question]
+  /// Decodes a JSON string into a Question.
   static Question? decode(String? data) =>
       data == null ? null : Question.fromJson(json.decode(data));
 
-  /// Helper to encode a [Question] into a JSON string
-  static String encode(Question question) => json.encode(toMap(question));
-
-  // --- Overrides ---
+  @override
+  String toString() => question;
 
   @override
-  String toString() {
-    return 'Question(questions: $questions)';
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is Question && other.question == question);
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    // Use listEquals for deep comparison of lists
-    return other is Question && listEquals(other.questions, questions);
-  }
-
-  @override
-  int get hashCode {
-    // A correct hashCode implementation for a list
-    return Object.hashAll(questions);
-  }
+  int get hashCode => question.hashCode;
 }

@@ -21,15 +21,19 @@ class ApiRepository {
     try {
       final response =
           await client.HttpClient.instance
-                  .get(resource: AipplyApi.generateQuetion, turnOn: true)
+                  .post(
+                    resource: AipplyApi.generateQuetion,
+                    turnOn: true,
+                    data: jsonEncode(payload),
+                  )
                   .timeout(Duration(seconds: networkTimeout))
               as http.Response;
 
       if (response.statusCode == 200) {
-        final json = await Isolate.run(() => jsonDecode(response.body));
-        final data = json['questions'];
-
-        questions = data.map((e) => Question.fromJson(e)).toList();
+        final json = jsonDecode(response.body);
+        questions = List<String>.from(
+          json['questions'],
+        ).map((q) => Question.fromJson(q)).toList();
       }
     } on SocketException {
       printOut(noOrPoorConnection);

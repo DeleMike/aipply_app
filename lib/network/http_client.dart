@@ -21,7 +21,10 @@ class HttpClient {
 
   /// get data from resource with microservice specification
   Future get({required String resource, bool turnOn = false}) async {
-    final response = await http.get(Uri.parse(api.baseUrl() + resource));
+    final response = await http.get(
+      Uri.parse(api.baseUrl() + resource),
+      headers: {'Content-Type': 'application/json'},
+    );
     _printTokenGetReq(response, turnOn: turnOn);
     return response;
   }

@@ -24,7 +24,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _isPanelExpanded = true;
   final Duration _animationDuration = const Duration(milliseconds: 300);
-  final List<String> _experienceLevels = ['New Grad', 'Intermediate', 'Senior'];
+  final List<String> _experienceLevels = [
+    'Just Starting Out',
+    'Some Experience',
+    'Highly Experienced',
+  ];
+  // final List<String> _experienceLevels = ['Entry Level', 'Mid Level', 'Senior Level'];
+
   late String _selectedExperienceLevel;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Map<String, dynamic> formData = {};
@@ -221,8 +227,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 if (newValue != null) {
                                   setState(() {
                                     _selectedExperienceLevel = newValue;
+                                    formData['experience_level'] = newValue;
                                   });
                                 }
+                              },
+                              onSaved: (newValue) {
+                                formData['experience_level'] = newValue;
                               },
                               decoration: InputDecoration(
                                 filled: true,
@@ -242,36 +252,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             final isValid = _formKey.currentState!.validate();
                             if (isValid) {
                               _formKey.currentState!.save();
-                              print('FomrData = $formData');
                               ref.read(isGeneratingQuestionsProvider.notifier).state =
                                   true;
 
                               final questions = await ref
                                   .read(questionGeneratorController)
-                                  .generateQuestions(formData['job_desc'], 'mid');
-
-                              print('Questions = $questions');
-
-                              // final List<String> programmingQuestions = [
-                              //   "What is the difference between synchronous and asynchronous programming?",
-                              //   "How does state management work in Flutter?",
-                              //   "What is the purpose of using providers in Riverpod?",
-                              //   "How would you handle API errors gracefully in an app?",
-                              //   "What are the advantages of immutable data structures?",
-                              //   "How do you approach debugging complex issues in production?",
-                              //   "What is the difference between composition and inheritance?",
-                              //   "How do you ensure your code is clean and maintainable?",
-                              //   "Phew...finally, please provide in here your name and email?",
-                              // ];
+                                  .generateQuestions(
+                                    formData['job_desc'],
+                                    formData['experience_level'],
+                                  );
 
                               ref.read(isGeneratingQuestionsProvider.notifier).state =
                                   false;
-                              // if (context.mounted) {
-                              //   context.goNamed(
-                              //     AppRouter.questionnaireScreen.substring(1),
-                              //     extra: {'questions': questions},
-                              //   );
-                              // }
+                              if (context.mounted) {
+                                context.goNamed(
+                                  AppRouter.questionnaireScreen.substring(1),
+                                  extra: {'questions': questions},
+                                );
+                              }
                             }
                           },
                           borderRadius: 8,

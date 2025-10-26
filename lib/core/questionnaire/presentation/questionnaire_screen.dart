@@ -263,8 +263,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
   ) {
     final bool isStaticQuestion = questionNumber <= _staticQuestions.length;
     final String storyHintText =
-        "e.g., 'I was tasked with refactoring our Go backend, which I "
-        "completed in 3 weeks and improved API speed by 30%.'";
+        "e.g., Share a brief example or explanation that highlights your experience, approach, or results.";
 
     final String hintText = isStaticQuestion ? "Your answer here..." : storyHintText;
     return Padding(
