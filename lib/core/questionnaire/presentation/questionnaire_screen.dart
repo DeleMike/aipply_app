@@ -29,13 +29,22 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
   late int _totalPages;
   int _currentPageIndex = 0;
 
+  late List<String> _allQuestions;
+  final List<String> _staticQuestions = [
+    "First, what is your full name, email address, and phone number?",
+    "Briefly describe your relevant experience. This can be jobs, internships, or key projects. (e.g., 'Senior Dev at AIpply, 2020-2023' or 'Final Year Project: AIpply App').",
+    "Finally, what is your educational background and your top skills? (e.g., 'B.S. in Computer Science; Skills: Go, Flutter, SQL')",
+  ];
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
 
+    _allQuestions = [..._staticQuestions, ...widget.questions];
+
     _answerControllers = List.generate(
-      widget.questions.length,
+      _allQuestions.length,
       (index) => TextEditingController(),
     );
 
@@ -85,8 +94,8 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
 
   Future<Map<String, String>> _generateDocuments() async {
     final answers = <String, String>{};
-    for (int i = 0; i < widget.questions.length; i++) {
-      answers[widget.questions[i]] = _answerControllers[i].text;
+    for (int i = 0; i < _allQuestions.length; i++) {
+      answers[_allQuestions[i]] = _answerControllers[i].text;
     }
 
     return await _fakeApiCall();
@@ -115,6 +124,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
                 padding: const EdgeInsets.all(32.0),
                 child: Form(
                   key: _formKey,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   child: Column(
                     children: [
                       Text(
@@ -166,7 +176,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
                             // Pages 1-N: Questions
                             final questionIndex = index - 1;
                             return _buildQuestionPage(
-                              widget.questions[questionIndex],
+                              _allQuestions[questionIndex],
                               _answerControllers[questionIndex],
                               questionIndex + 1,
                             );
@@ -199,7 +209,7 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     if (_currentPageIndex == _totalPages - 1) {
       return AppLocalizations.of(context)!.allDone;
     }
-    return "${AppLocalizations.of(context)!.question} $_currentPageIndex of ${widget.questions.length}";
+    return "${AppLocalizations.of(context)!.question} $_currentPageIndex of ${_allQuestions.length}";
   }
 
   Widget _buildNavigationRow() {
@@ -251,6 +261,12 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     TextEditingController controller,
     int questionNumber,
   ) {
+    final bool isStaticQuestion = questionNumber <= _staticQuestions.length;
+    final String storyHintText =
+        "e.g., 'I was tasked with refactoring our Go backend, which I "
+        "completed in 3 weeks and improved API speed by 30%.'";
+
+    final String hintText = isStaticQuestion ? "Your answer here..." : storyHintText;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
       child: Column(
@@ -266,20 +282,28 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
           const SizedBox(height: 24),
           TextFormField(
             controller: controller,
-            maxLines: 5,
+            maxLines: isStaticQuestion ? 5 : 8,
+            textInputAction: TextInputAction.newline,
             decoration: InputDecoration(
-              hintText: AppLocalizations.of(context)!.yourAnswerHere,
+              hintText: hintText,
               filled: true,
               fillColor: AppColors.kGray300,
-
+              hintStyle: TextStyle(
+                color: AppColors.kGray600.withValues(alpha: 0.7),
+                fontSize: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(kSmallRadius),
                 borderSide: BorderSide.none,
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.isEmpty || (value.trim().isEmpty)) {
                 return AppLocalizations.of(context)!.errorMessageForQuestionnaire;
+              }
+              if (!isStaticQuestion &&
+                  value.split(' ').where((s) => s.isNotEmpty).length < 25) {
+                return AppLocalizations.of(context)!.errorMessageForQuestionnaire2;
               }
               return null;
             },
@@ -325,21 +349,17 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             textStyle: Theme.of(context).textTheme.titleLarge,
           ),
           onPressed: () async {
-            final isValid = _formKey.currentState!.validate();
-
-            if (isValid) {
-              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = true;
-              final response = await _generateDocuments();
-              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
-              if (mounted) {
-                context.goNamed(
-                  AppRouter.resultsScreen.substring(1),
-                  extra: {
-                    'cv_html': response['cv_html'],
-                    'cover_letter_html': response['cover_letter_html'],
-                  },
-                );
-              }
+            ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = true;
+            final response = await _generateDocuments();
+            ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
+            if (mounted) {
+              context.goNamed(
+                AppRouter.resultsScreen.substring(1),
+                extra: {
+                  'cv_html': response['cv_html'],
+                  'cover_letter_html': response['cover_letter_html'],
+                },
+              );
             }
           },
           child: Text(buttonText),

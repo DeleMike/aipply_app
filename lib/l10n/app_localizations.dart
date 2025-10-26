@@ -214,6 +214,12 @@ abstract class AppLocalizations {
   /// **'can you help us fill in this field, please? 🥹'**
   String get errorMessageForQuestionnaire;
 
+  /// No description provided for @errorMessageForQuestionnaire2.
+  ///
+  /// In en, this message translates to:
+  /// **'Please provide a more detailed answer (at least 25 words) so we can build a strong CV.'**
+  String get errorMessageForQuestionnaire2;
+
   /// No description provided for @yourDocs.
   ///
   /// In en, this message translates to:

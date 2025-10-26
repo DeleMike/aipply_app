@@ -72,6 +72,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'can you help us fill in this field, please? 🥹';
 
   @override
+  String get errorMessageForQuestionnaire2 =>
+      'Please provide a more detailed answer (at least 25 words) so we can build a strong CV.';
+
+  @override
   String get yourDocs => 'Your Documents';
 
   @override
