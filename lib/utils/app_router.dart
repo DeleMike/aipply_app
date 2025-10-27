@@ -25,7 +25,21 @@ class AppRouter {
           child: const NotFoundScreen(),
         );
       },
-      // errorBuilder: (context, state) => const NotFoundScreen(),
+      redirect: (BuildContext context, GoRouterState state) {
+        // Check if the user is trying to access a protected route
+        final goingToQuestionnaire = state.matchedLocation == questionnaireScreen;
+        final goingToResults = state.matchedLocation == resultsScreen;
+
+        // If they are going to a page that requires data,
+        // but no data is being passed (e.g., direct URL or refresh).
+        if ((goingToQuestionnaire || goingToResults) && state.extra == null) {
+          // Redirect them back to the initial screen to start over.
+          // We use initialScreen since both it and homeScreen point to InitScreen.
+          return initialScreen;
+        }
+
+        return null;
+      },
       routes: [
         GoRoute(
           path: initialScreen,
