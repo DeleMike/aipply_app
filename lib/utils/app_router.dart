@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../init_screen.dart';
+import '../widgets/not_found_screen.dart';
 import 'constants.dart';
 import 'custom_page_transition.dart';
 
@@ -17,10 +18,14 @@ class AppRouter {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: initialScreen,
-      
-      observers: [
-        NavigatorObserver()
-      ],
+      errorPageBuilder: (context, state) {
+        return buildPageWithDefaultTransition<void>(
+          context: context,
+          state: state,
+          child: const NotFoundScreen(),
+        );
+      },
+      // errorBuilder: (context, state) => const NotFoundScreen(),
       routes: [
         GoRoute(
           path: initialScreen,

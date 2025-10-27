@@ -95,4 +95,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get yourDoc => 'Your document...';
+
+  @override
+  String get notFoundPageTitle => '404 - Page Not Found';
+
+  @override
+  String get notFoundPageTitleDesc =>
+      'Sorry, the page you\'re looking for doesn\'t exist or has been moved.';
 }
