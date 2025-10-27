@@ -261,6 +261,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your document...'**
   String get yourDoc;
+
+  /// No description provided for @notFoundPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'404 - Page Not Found'**
+  String get notFoundPageTitle;
+
+  /// No description provided for @notFoundPageTitleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Sorry, the page you\'re looking for doesn\'t exist or has been moved.'**
+  String get notFoundPageTitleDesc;
 }
 
 class _AppLocalizationsDelegate

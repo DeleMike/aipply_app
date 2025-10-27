@@ -9,7 +9,7 @@ import '../../../utils/debug_fns.dart';
 class GenerateCvController with ChangeNotifier {
   final _apiRepo = ApiRepository();
 
-  Future<CVDocument> generateCV(
+  Future<(CVDocument, String)> generateCV(
     String jobDescription,
     List<Map<String, dynamic>> answers,
   ) async {
@@ -19,8 +19,8 @@ class GenerateCvController with ChangeNotifier {
 
     printOut('Payload for Cover Letter = ${jsonEncode(payload)})');
 
-    final cv = await _apiRepo.generateCV(payload: payload);
+    final (cv, errorMsg) = await _apiRepo.generateCV(payload: payload);
 
-    return cv;
+    return (cv, errorMsg);
   }
 }

@@ -5,11 +5,13 @@ import 'package:aipply/utils/assets.dart';
 import 'package:aipply/utils/dimensions.dart';
 import 'package:aipply/widgets/general_elevated_button.dart';
 import 'package:aipply/widgets/general_input_field.dart';
+import 'package:aipply/widgets/show_error_dialog.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../utils/constants.dart';
 import '../../../widgets/loading_overlay.dart';
 import '../../../widgets/quote_block.dart';
 import '../application/providers.dart';
@@ -255,15 +257,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ref.read(isGeneratingQuestionsProvider.notifier).state =
                                   true;
 
-                              final questions = await ref
+                              final (questions, error) = await ref
                                   .read(questionGeneratorController)
                                   .generateQuestions(
                                     formData['job_desc'],
                                     formData['experience_level'],
                                   );
-
                               ref.read(isGeneratingQuestionsProvider.notifier).state =
                                   false;
+                              if (error == "429") {
+                                showErrorDialog(context, tooManyRequests);
+                                return;
+                              } else if (error == "500" || questions.isEmpty) {
+                                showErrorDialog(context, somethingWentWrong);
+                                return;
+                              }
+
                               if (context.mounted) {
                                 context.goNamed(
                                   AppRouter.questionnaireScreen.substring(1),

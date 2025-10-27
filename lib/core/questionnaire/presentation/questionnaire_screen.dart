@@ -9,7 +9,9 @@ import 'package:aipply/utils/dimensions.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../utils/app_router.dart';
+import '../../../utils/constants.dart';
 import '../../../widgets/loading_overlay.dart';
+import '../../../widgets/show_error_dialog.dart';
 import '../domain/qa.dart';
 
 class QuestionnaireScreen extends ConsumerStatefulWidget {
@@ -96,20 +98,13 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
     );
   }
 
-  Future<Map<String, String>> _generateDocuments(
+  Future<(Map<String, String>, String)> _generateDocuments(
     List<Map<String, dynamic>> qaJsonList, {
     int retryCount = 0,
   }) async {
     const maxRetries = 3;
 
     try {
-      // final List<QA> qaList = [
-      //   for (int i = 0; i < _allQuestions.length; i++)
-      //     QA(question: _allQuestions[i], answer: _answerControllers[i].text.trim()),
-      // ];
-
-      // final qaJsonList = qaList.map((qa) => qa.toJson()).toList();
-
       final cvFuture = ref
           .read(cvDocumentProvider)
           .generateCV(widget.jobDesc, qaJsonList);
@@ -119,10 +114,22 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
 
       final results = await Future.wait([cvFuture, coverLetterFuture]);
 
-      final cv = results[0] as CVDocument;
-      final coverLetter = results[1] as CoverLetterDocument;
+      final (cv, cvError) = results[0] as (CVDocument, String);
+      final (coverLetter, clError) = results[1] as (CoverLetterDocument, String);
 
-      return {"cv_html": cv.text, "cover_letter_html": coverLetter.text};
+      // Check for errors, prioritizing 429
+      if (cvError == "429" || clError == "429") {
+        return (<String, String>{}, "429");
+      }
+      // Check for any other returned error
+      if (cvError.isNotEmpty || clError.isNotEmpty) {
+        return (<String, String>{}, "500");
+      }
+
+      return (
+        {"cv_html": cv.text, "cover_letter_html": coverLetter.text},
+        "", // No error
+      );
     } catch (e) {
       // Check if we should retry
       if (retryCount < maxRetries) {
@@ -405,8 +412,26 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
             final qaJsonList = qaList.map((qa) => qa.toJson()).toList();
             ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = true;
             try {
-              final response = await _generateDocuments(qaJsonList);
-              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
+              // This now returns (response, error)
+              final (response, error) = await _generateDocuments(qaJsonList);
+              ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state =
+                  false; // Stop loading
+
+              // --- NEW ERROR HANDLING ---
+              if (error.isNotEmpty) {
+                if (mounted) {
+                  if (error == "429") {
+                    showErrorDialog(context, tooManyRequests);
+                  } else {
+                    // "500" or any other string
+                    showErrorDialog(context, somethingWentWrong);
+                  }
+                }
+                return; // Stop execution
+              }
+              // --- END OF NEW HANDLING ---
+
+              // Success
               if (mounted) {
                 context.goNamed(
                   AppRouter.resultsScreen.substring(1),
@@ -419,7 +444,11 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
                 );
               }
             } catch (e) {
+              // This catches network exceptions
               ref.read(isGeneratingCVAndCoverLetterProvider.notifier).state = false;
+              if (mounted) {
+                showErrorDialog(context, somethingWentWrong);
+              }
             }
           },
           child: Text(buttonText),
