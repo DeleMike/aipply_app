@@ -41,14 +41,14 @@ class AppRouter {
           name: questionnaireScreen.substring(1),
           builder: (context, state) {
             final arguments = state.extra as Map;
-            final questions = arguments['questions'];
+            final questions = List<String>.from(arguments['questions'] as List);
             final jd = arguments['jd'];
 
             return QuestionnaireScreen(questions: questions, jobDesc: jd);
           },
           pageBuilder: (context, state) {
             final arguments = state.extra as Map;
-            final questions = arguments['questions'];
+            final questions = List<String>.from(arguments['questions'] as List);
             final jd = arguments['jd'];
 
             return buildPageWithDefaultTransition<void>(
@@ -67,7 +67,9 @@ class AppRouter {
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
             final jobDesc = arguments['job_desc'];
-            final qaListJson = arguments['qa_list_json'];
+            final qaListJson = List<Map<String, dynamic>>.from(
+              arguments['qa_list_json'] as List,
+            );
             return ResultScreen(
               cvHtml: cvHTML,
               coverLetterHtml: coverLetterHTML,
@@ -80,7 +82,9 @@ class AppRouter {
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
             final jobDesc = arguments['job_desc'];
-            final qaListJson = arguments['qa_list_json'];
+            final qaListJson = List<Map<String, dynamic>>.from(
+              arguments['qa_list_json'] as List,
+            );
             return buildPageWithDefaultTransition<void>(
               context: context,
               state: state,
