@@ -1,5 +1,6 @@
 import 'package:aipply/core/results/presentation/result_screen.dart';
 import 'package:aipply/core/questionnaire/presentation/questionnaire_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../init_screen.dart';
@@ -16,6 +17,10 @@ class AppRouter {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: initialScreen,
+      
+      observers: [
+        NavigatorObserver()
+      ],
       routes: [
         GoRoute(
           path: initialScreen,

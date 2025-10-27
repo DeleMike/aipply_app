@@ -28,6 +28,8 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_localizations:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   html_editor_enhanced: ^2.7.1
   pdf: ^3.11.3
   printing: ^5.14.2
