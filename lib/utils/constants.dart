@@ -7,6 +7,11 @@ import 'app_colors.dart';
 
 const String kAppName = 'AIpply';
 
+const tooManyRequests =
+    "You have exceeded your daily limit of 5 requests.\n\nPlease try again in 24 hours.";
+const somethingWentWrong =
+    "Something went wrong.\n\nDon't worry, we are looking into it.";
+
 final kCovertToCurrencyForm = NumberFormat("#,##0.00", "en_US");
 
 final kCovertToReadableForm = NumberFormat("#,##0", "en_US");

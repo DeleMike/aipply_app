@@ -14,10 +14,11 @@ import '../utils/debug_fns.dart';
 const kRepoErrorPrepend = 'Something went wrong.';
 
 class ApiRepository {
-  Future<List<Question>> generateQuestions({
+  Future<(List<Question>, String)> generateQuestions({
     required Map<String, dynamic> payload,
   }) async {
     List<Question> questions = [];
+    String errorStatusMessage = "";
 
     try {
       final response =
@@ -29,12 +30,16 @@ class ApiRepository {
                   )
                   .timeout(Duration(seconds: networkTimeout))
               as http.Response;
+      final json = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
         questions = List<String>.from(
           json['questions'],
         ).map((q) => Question.fromJson(q)).toList();
+      } else if (response.statusCode == 429) {
+        errorStatusMessage = "429";
+      } else {
+        errorStatusMessage = "500";
       }
     } on SocketException {
       printOut(noOrPoorConnection);
@@ -42,11 +47,12 @@ class ApiRepository {
       printOut('$kRepoErrorPrepend $e\n$s');
     }
 
-    return questions;
+    return (questions, errorStatusMessage);
   }
 
-  Future<CVDocument> generateCV({required Map<String, dynamic> payload}) async {
+  Future<(CVDocument, String)> generateCV({required Map<String, dynamic> payload}) async {
     CVDocument document = CVDocument.empty();
+    String errorStatusMessage = "";
     try {
       final response =
           await client.HttpClient.instance
@@ -57,12 +63,16 @@ class ApiRepository {
                   )
                   .timeout(Duration(seconds: networkTimeout))
               as http.Response;
+      final json = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
         final cv = json['cv'];
         document = CVDocument(text: cv);
         print('cv document = $cv');
+      } else if (response.statusCode == 429) {
+        errorStatusMessage = "429";
+      } else {
+        errorStatusMessage = "500";
       }
     } on SocketException {
       printOut(noOrPoorConnection);
@@ -70,13 +80,15 @@ class ApiRepository {
       printOut('$kRepoErrorPrepend $e\n$s');
     }
 
-    return document;
+    return (document, errorStatusMessage);
   }
 
-  Future<CoverLetterDocument> generateCoverLetter({
+  Future<(CoverLetterDocument, String)> generateCoverLetter({
     required Map<String, dynamic> payload,
   }) async {
     CoverLetterDocument document = CoverLetterDocument.empty();
+    String errorStatusMessage = "";
+
     try {
       final response =
           await client.HttpClient.instance
@@ -87,13 +99,17 @@ class ApiRepository {
                   )
                   .timeout(Duration(seconds: networkTimeout))
               as http.Response;
+      final json = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
         final coverLetter = json['cover'];
         document = CoverLetterDocument(text: coverLetter);
 
         print('cover letter document = $coverLetter');
+      } else if (response.statusCode == 429) {
+        errorStatusMessage = "429";
+      } else {
+        errorStatusMessage = "500";
       }
     } on SocketException {
       printOut(noOrPoorConnection);
@@ -101,7 +117,7 @@ class ApiRepository {
       printOut('$kRepoErrorPrepend $e\n$s');
     }
 
-    return document;
+    return (document, errorStatusMessage);
   }
 
   Future<void> generateMetrics() async {}

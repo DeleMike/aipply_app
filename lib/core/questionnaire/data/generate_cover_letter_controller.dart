@@ -9,7 +9,7 @@ import '../../../network/api_repository.dart';
 class GenerateCoverLetterController with ChangeNotifier {
   final _apiRepo = ApiRepository();
 
-  Future<CoverLetterDocument> generateCoverLetter(
+  Future<(CoverLetterDocument, String)> generateCoverLetter(
     String jobDescription,
     List<Map<String, dynamic>> answers,
   ) async {
@@ -19,9 +19,8 @@ class GenerateCoverLetterController with ChangeNotifier {
 
     printOut('Payload for Cover Letter = ${jsonEncode(payload)})');
 
-    final coverLetter = await _apiRepo.generateCoverLetter(payload: payload);
-    
+    final (coverLetter, errorMsg) = await _apiRepo.generateCoverLetter(payload: payload);
 
-    return coverLetter;
+    return (coverLetter, errorMsg);
   }
 }

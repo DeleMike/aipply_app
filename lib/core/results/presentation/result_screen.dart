@@ -13,6 +13,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../utils/app_colors.dart';
 import '../../../widgets/loading_overlay.dart';
+import '../../../widgets/show_error_dialog.dart';
 import '../../questionnaire/application/providers.dart';
 
 /// Keeps child widgets alive when switching tabs
@@ -74,28 +75,47 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
     try {
       String newHtml;
+      String error;
       if (docType == 'cv') {
-        final cvDoc = await ref
+        final (cvDoc, cvError) = await ref
             .read(cvDocumentProvider)
             .generateCV(widget.jobDesc, widget.qaListJson);
         newHtml = cvDoc.text;
+        error = cvError;
+        if (error.isEmpty) {
+          setState(() => _currentCvHtml = newHtml);
+          _cvController.setText(newHtml);
+        }
         setState(() => _currentCvHtml = newHtml);
         _cvController.setText(newHtml);
       } else {
-        final clDoc = await ref
+        final (clDoc, clError) = await ref
             .read(coverLetterDocumentProvider)
             .generateCoverLetter(widget.jobDesc, widget.qaListJson);
         newHtml = clDoc.text;
-        setState(() => _currentCoverLetterHtml = newHtml);
-        _coverLetterController.setText(newHtml);
+        error = clError;
+        if (error.isEmpty) {
+          setState(() => _currentCoverLetterHtml = newHtml);
+          _coverLetterController.setText(newHtml);
+        }
       }
-      showToast('Document regenerated successfully!', textShouldBeInProd: true);
+
+      if (error.isNotEmpty) {
+        if (mounted) {
+          if (error == "429") {
+            showErrorDialog(context, tooManyRequests);
+          } else {
+            showErrorDialog(context, somethingWentWrong);
+          }
+        }
+      } else {
+        showToast('Document regenerated successfully!', textShouldBeInProd: true);
+      }
     } catch (e) {
       printOut('Error refetching document: $e');
-      showToast(
-        'Failed to regenerate document. Please try again.',
-        textShouldBeInProd: true,
-      );
+      if (mounted) {
+        showErrorDialog(context, somethingWentWrong);
+      }
     } finally {
       ref.read(provider.notifier).state = false;
     }
