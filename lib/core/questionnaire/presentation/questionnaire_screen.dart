@@ -37,9 +37,11 @@ class _QuestionnaireScreenState extends ConsumerState<QuestionnaireScreen>
 
   late List<String> _allQuestions;
   final List<String> _staticQuestions = [
-    "First, what is your full name, email address, and phone number?",
-    "Briefly describe your relevant experience. This can be jobs, internships, or key projects. (e.g., 'Senior Dev at AIpply, 2020-2023' or 'Final Year Project: AIpply App').",
-    "Finally, what is your educational background and your top skills? (e.g., 'B.S. in Computer Science; Skills: Go, Flutter, SQL')",
+    "First, what's your core contact info? (Full Name, Email, Phone, and your LinkedIn/GitHub URL if you have one).",
+
+    "What's your work history? You can copy-paste this from a CV, or just type it out. (e.g., 'Senior Dev, Google, 2020-Present' or 'Freelance Writer, 2023'). Please put each role on a new line.",
+
+    "Finally, what are your top skills and educational background? Feel free to copy-paste this, or type it. (e.g., 'Skills: Go, Flutter, SQL; Education: B.S. in Computer Science').",
   ];
 
   @override
