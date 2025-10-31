@@ -20,7 +20,7 @@ class ApiConfigService {
 
   /// Get base URL for specific microservice
   String baseUrl() {
-    return prodBaseUrl;
+    return devBaseUrl;
   }
 
   /// Set Headers

@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/loading_overlay.dart';
 import '../../../widgets/quote_block.dart';
+import '../../metrics/application/providers.dart';
 import '../application/providers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -48,6 +49,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final double screenWidth = kScreenWidth(context);
     final double panelWidth = _isPanelExpanded ? screenWidth * 0.5 : 90.0;
     final isLoading = ref.watch(isGeneratingQuestionsProvider);
+    final metricsAsync = ref.watch(metricsStreamProvider);
+
     return Scaffold(
       body: Row(
         children: [
@@ -167,6 +170,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                            metricsAsync.when(
+                              data: (metrics) {
+                                final cvCount = metrics?.cvGenerated ?? 0;
+                                final clCount = metrics?.coverLetterGenerated ?? 0;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 24.0),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: _MetricsCard(
+                                          title: 'CVs Generated',
+                                          count: cvCount,
+                                          icon: Icons.description_outlined,
+                                          color: AppColors.kPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: _MetricsCard(
+                                          title: 'Cover Letters Generated',
+                                          count: clCount,
+                                          icon: Icons.edit_note_outlined,
+                                          color: AppColors.kAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              loading: () =>
+                                  const Center(child: CircularProgressIndicator()),
+                              error: (err, _) => Text(
+                                'Unable to load metrics',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium!.copyWith(color: Colors.redAccent),
+                              ),
                             ),
                             const Padding(
                               padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
@@ -302,6 +344,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   isLoading: isLoading,
                   headerText: 'Generating Your Questions',
                   descriptionText: 'Analyzing your job description...',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricsCard extends StatelessWidget {
+  final String title;
+  final int count;
+  final IconData icon;
+  final Color color;
+
+  const _MetricsCard({
+    required this.title,
+    required this.count,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.01),
+            blurRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            // ensures text respects available space
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                Text(
+                  '$count',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
               ],
             ),

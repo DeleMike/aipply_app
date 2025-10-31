@@ -8,6 +8,7 @@ import 'package:aipply/network/aipply_api.dart';
 import 'package:aipply/network/http_client.dart' as client;
 import 'package:http/http.dart' as http;
 
+import '../core/metrics/domain/metrics.dart';
 import '../utils/constants.dart';
 import '../utils/debug_fns.dart';
 
@@ -120,5 +121,27 @@ class ApiRepository {
     return (document, errorStatusMessage);
   }
 
-  Future<void> generateMetrics() async {}
+  Future<Metrics?> generateMetrics() async {
+    Metrics? metrics;
+    try {
+      final response =
+          await client.HttpClient.instance
+                  .get(resource: AipplyApi.metrics, turnOn: true)
+                  .timeout(Duration(seconds: networkTimeout))
+              as http.Response;
+
+      final json = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        metrics = Metrics.fromJson(json);
+      }
+      printOut('Metrics = $metrics');
+    } on SocketException {
+      printOut(noOrPoorConnection);
+    } catch (e, s) {
+      printOut('$kRepoErrorPrepend $e\n$s');
+    }
+
+    return metrics;
+  }
 }
