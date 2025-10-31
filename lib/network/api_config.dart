@@ -7,6 +7,7 @@ class ApiConfigService {
   Dio dio = Dio();
 
   static const devBaseUrl = 'http://localhost:5050/api/v1/';
+  static const prodBaseUrl = 'https://aipply-6egm.onrender.com/api/v1/';
 
   /// Configuration Service for Dio
   ApiConfigService();
@@ -19,7 +20,7 @@ class ApiConfigService {
 
   /// Get base URL for specific microservice
   String baseUrl() {
-    return devBaseUrl;
+    return prodBaseUrl;
   }
 
   /// Set Headers
