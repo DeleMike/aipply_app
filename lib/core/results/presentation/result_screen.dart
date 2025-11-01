@@ -86,8 +86,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
           setState(() => _currentCvHtml = newHtml);
           _cvController.setText(newHtml);
         }
-        setState(() => _currentCvHtml = newHtml);
-        _cvController.setText(newHtml);
       } else {
         final (clDoc, clError) = await ref
             .read(coverLetterDocumentProvider)
@@ -123,17 +121,21 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = kScreenWidth(context);
+    final bool isMobile = screenWidth < 768;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: Padding(
-            padding: const EdgeInsets.only(top: kPaddingS),
+            padding: EdgeInsets.only(top: isMobile ? 8 : kPaddingS),
             child: Text(
               AppLocalizations.of(context)!.yourDocs,
               style: Theme.of(context).textTheme.displayLarge!.copyWith(
                 color: AppColors.kTextOnPrimary,
                 height: 1.5,
+                fontSize: isMobile ? 20 : null,
               ),
             ),
           ),
@@ -142,18 +144,27 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             indicatorSize: TabBarIndicatorSize.tab,
             labelColor: AppColors.kTextOnPrimary,
             unselectedLabelColor: AppColors.kTextOnPrimary.withValues(alpha: 0.7),
-            labelStyle: Theme.of(
-              context,
-            ).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.w400, fontSize: 16),
+            labelStyle: Theme.of(context).textTheme.bodyLarge!.copyWith(
+              fontWeight: FontWeight.w400,
+              fontSize: isMobile ? 14 : 16,
+            ),
             unselectedLabelStyle: Theme.of(context).textTheme.bodyLarge,
             indicatorWeight: 5,
             tabs: [
               Tab(
-                icon: Icon(Icons.article, color: AppColors.kTextOnPrimary),
+                icon: Icon(
+                  Icons.article,
+                  color: AppColors.kTextOnPrimary,
+                  size: isMobile ? 20 : 24,
+                ),
                 child: Text(AppLocalizations.of(context)!.cv),
               ),
               Tab(
-                icon: Icon(Icons.mail, color: AppColors.kTextOnPrimary),
+                icon: Icon(
+                  Icons.mail,
+                  color: AppColors.kTextOnPrimary,
+                  size: isMobile ? 20 : 24,
+                ),
                 child: Text(AppLocalizations.of(context)!.coverLetter),
               ),
             ],
@@ -168,6 +179,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 downloadFilename: AppLocalizations.of(context)!.downloadCV,
                 docType: 'cv',
                 isRefetchingProvider: _isRefetchingCv,
+                isMobile: isMobile,
               ),
             ),
             KeepAlive(
@@ -177,6 +189,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                 downloadFilename: AppLocalizations.of(context)!.coverLetter,
                 docType: 'cl',
                 isRefetchingProvider: _isRefetchingCoverLetter,
+                isMobile: isMobile,
               ),
             ),
           ],
@@ -213,6 +226,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     required String downloadFilename,
     required String docType,
     required StateProvider<bool> isRefetchingProvider,
+    required bool isMobile,
   }) {
     final isDownloading = ref.watch(isDownloadingDocumentProvider);
     final isRefetching = ref.watch(isRefetchingProvider);
@@ -220,34 +234,47 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
 
     if (!hasContent) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 24.0 : 32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 60, color: Colors.red[400]),
-              const SizedBox(height: 16),
+              Icon(Icons.error_outline, size: isMobile ? 50 : 60, color: Colors.red[400]),
+              SizedBox(height: isMobile ? 12 : 16),
               Text(
                 'Generation Failed',
-                style: Theme.of(context).textTheme.headlineMedium,
+                style:
+                    (isMobile
+                            ? Theme.of(context).textTheme.titleLarge
+                            : Theme.of(context).textTheme.headlineMedium)
+                        ?.copyWith(fontSize: isMobile ? 20 : null),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 6 : 8),
               Text(
                 'There was an issue generating this document. Please try again.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontSize: isMobile ? 14 : null),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: isMobile ? 20 : 24),
               if (isRefetching)
                 const CircularProgressIndicator()
               else
                 ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry Generation'),
+                  icon: Icon(Icons.refresh, size: isMobile ? 18 : 20),
+                  label: Text(
+                    'Retry Generation',
+                    style: TextStyle(fontSize: isMobile ? 14 : 16),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.kPrimary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 24 : 30,
+                      vertical: isMobile ? 12 : 15,
+                    ),
                   ),
                   onPressed: () => _refetchDocument(docType),
                 ),
@@ -258,30 +285,40 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
       child: Column(
         children: [
-          ElevatedButton.icon(
-            icon: const Icon(Icons.cloud_download_outlined),
-            label: Text(
-              AppLocalizations.of(context)!.downloadAsAPDF,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium!.copyWith(color: AppColors.kTextOnPrimary),
+          // Download Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: Icon(Icons.cloud_download_outlined, size: isMobile ? 18 : 20),
+              label: Text(
+                AppLocalizations.of(context)!.downloadAsAPDF,
+                style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                  color: AppColors.kTextOnPrimary,
+                  fontSize: isMobile ? 14 : 16,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.kPrimary,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 20 : 30,
+                  vertical: isMobile ? 12 : 15,
+                ),
+              ),
+              onPressed: () async {
+                if (isDownloading) return;
+                ref.read(isDownloadingDocumentProvider.notifier).state = true;
+                await _downloadAsPdf(controller, downloadFilename);
+                ref.read(isDownloadingDocumentProvider.notifier).state = false;
+              },
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.kPrimary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-            ),
-            onPressed: () async {
-              if (isDownloading) return;
-              ref.read(isDownloadingDocumentProvider.notifier).state = true;
-              await _downloadAsPdf(controller, downloadFilename);
-              ref.read(isDownloadingDocumentProvider.notifier).state = false;
-            },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
+
+          // Editor
           Expanded(
             child: Stack(
               children: [
@@ -296,8 +333,11 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                       hint: AppLocalizations.of(context)!.yourDoc,
                       initialText: initialHtml,
                     ),
-                    htmlToolbarOptions: const HtmlToolbarOptions(
+                    htmlToolbarOptions: HtmlToolbarOptions(
                       toolbarPosition: ToolbarPosition.aboveEditor,
+                      toolbarType: isMobile
+                          ? ToolbarType.nativeScrollable
+                          : ToolbarType.nativeGrid,
                       defaultToolbarButtons: [
                         StyleButtons(),
                         FontSettingButtons(),
@@ -305,7 +345,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
                         ParagraphButtons(),
                       ],
                     ),
-                    otherOptions: const OtherOptions(height: 500),
+                    otherOptions: OtherOptions(height: isMobile ? 400 : 500),
                   ),
                 ),
                 LoadingOverlay(
