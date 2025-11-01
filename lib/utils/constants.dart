@@ -8,7 +8,7 @@ import 'app_colors.dart';
 const String kAppName = 'AIpply';
 
 const tooManyRequests =
-    "You have exceeded your daily limit of 10 requests.\n\nPlease try again in 24 hours.";
+    "You have exceeded your daily limit of 6 full generations.\n\nPlease try again by midnight.";
 const somethingWentWrong =
     "Something went wrong.\n\nDon't worry, we are looking into it.";
 

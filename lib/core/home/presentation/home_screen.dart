@@ -1,3 +1,5 @@
+import 'package:web/web.dart' as web;
+
 import 'package:aipply/l10n/app_localizations.dart';
 import 'package:aipply/utils/app_colors.dart';
 import 'package:aipply/utils/app_router.dart';
@@ -54,217 +56,227 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Mobile layout
     if (isMobile) {
       return Scaffold(
-        body: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                // App Bar with Logo
-                SliverAppBar(
-                  expandedHeight: 120,
-                  collapsedHeight: 80,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: AppColors.kPrimary,
-                  flexibleSpace: FlexibleSpaceBar(
-                    centerTitle: true,
-                    title: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(AssetsImages.aipplyIcon, width: 35, height: 35),
-                        Text(
-                          AppLocalizations.of(context)!.appName.toUpperCase(),
-                          style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                            color: AppColors.kAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Content
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            web.window.location.reload();
+          },
+          color: AppColors.kPrimary,
+          backgroundColor: Colors.white,
+          strokeWidth: 3.0,
+          child: Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  // App Bar with Logo
+                  SliverAppBar(
+                    expandedHeight: 120,
+                    collapsedHeight: 80,
+                    floating: false,
+                    pinned: true,
+                    backgroundColor: AppColors.kPrimary,
+                    flexibleSpace: FlexibleSpaceBar(
+                      centerTitle: true,
+                      title: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Metrics Cards
-                          metricsAsync.when(
-                            data: (metrics) {
-                              final cvCount = metrics?.cvGenerated ?? 0;
-                              final clCount = metrics?.coverLetterGenerated ?? 0;
-
-                              return Column(
-                                children: [
-                                  _MetricsCard(
-                                    title: 'CVs Generated',
-                                    count: cvCount,
-                                    icon: Icons.description_outlined,
-                                    color: AppColors.kPrimary,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _MetricsCard(
-                                    title: 'Cover Letters',
-                                    count: clCount,
-                                    icon: Icons.edit_note_outlined,
-                                    color: AppColors.kAccent,
-                                  ),
-                                ],
-                              );
-                            },
-                            loading: () => const Center(child: SingleLineWaitWidget()),
-                            error: (err, _) => Text(
-                              'Unable to load metrics',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium!.copyWith(color: Colors.redAccent),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Instructions
-                          const QuoteBlock(
-                            text:
-                                "1. Paste the job description\n"
-                                "2. Select your experience level\n"
-                                "3. Answer key questions\n"
-                                "4. Get your CV & cover letter",
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Job Description Header
+                          Image.asset(AssetsImages.aipplyIcon, width: 35, height: 35),
                           Text(
-                            AppLocalizations.of(context)!.jobDescription.toUpperCase(),
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Job Description Field
-                          GeneralInputField(
-                            widgetKey: 'jd_field',
-                            needsFieldName: false,
-                            fieldName: '',
-                            hintText: AppLocalizations.of(context)!.jobDescTextFieldHint,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your job description';
-                              }
-                              return null;
-                            },
-                            keyValueForDict: 'job_desc',
-                            userData: formData,
-                            keyboardType: TextInputType.multiline,
-                            errorProvider: null,
-                            enabled: true,
-                            actionWhenOnChangedisPressed: (value) {},
-                            textEditingController: null,
-                            textInputAction: TextInputAction.newline,
-                            focusNode: null,
-                            maxLines: 8,
-                            expands: false,
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Experience Level
-                          Text(
-                            AppLocalizations.of(context)!.experienceLevel.toUpperCase(),
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField2<String>(
-                            value: _selectedExperienceLevel,
-                            items: _experienceLevels.map((String level) {
-                              return DropdownMenuItem<String>(
-                                value: level,
-                                child: Text(level, style: TextStyle(height: 1.5)),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              if (newValue != null) {
-                                setState(() {
-                                  _selectedExperienceLevel = newValue;
-                                  formData['experience_level'] = newValue;
-                                });
-                              }
-                            },
-                            onSaved: (newValue) {
-                              formData['experience_level'] = newValue;
-                            },
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: AppColors.kGray300,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(kSmallRadius),
-                                borderSide: BorderSide.none,
-                              ),
+                            AppLocalizations.of(context)!.appName.toUpperCase(),
+                            style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                              color: AppColors.kAccent,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 24),
-
-                          // Submit Button
-                          GeneralElevatedButton(
-                            onPressed: () async {
-                              final isValid = _formKey.currentState!.validate();
-                              if (isValid) {
-                                _formKey.currentState!.save();
-                                ref.read(isGeneratingQuestionsProvider.notifier).state =
-                                    true;
-
-                                final (questions, error) = await ref
-                                    .read(questionGeneratorController)
-                                    .generateQuestions(
-                                      formData['job_desc'],
-                                      formData['experience_level'],
-                                    );
-                                ref.read(isGeneratingQuestionsProvider.notifier).state =
-                                    false;
-                                if (error == "429") {
-                                  showErrorDialog(context, tooManyRequests);
-                                  return;
-                                } else if (error == "500" || questions.isEmpty) {
-                                  showErrorDialog(context, somethingWentWrong);
-                                  return;
-                                }
-
-                                if (context.mounted) {
-                                  context.goNamed(
-                                    AppRouter.questionnaireScreen.substring(1),
-                                    extra: {
-                                      'questions': questions,
-                                      'jd': formData['job_desc'],
-                                    },
-                                  );
-                                }
-                              }
-                            },
-                            borderRadius: 8,
-                            buttonHeight: 56,
-                            buttonColor: AppColors.kPrimary,
-                            child: Text(
-                              AppLocalizations.of(context)!.answerQuestions,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyLarge!.copyWith(color: AppColors.kWhite),
-                            ),
-                          ),
-                          const SizedBox(height: 32),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            LoadingOverlay(
-              isLoading: isLoading,
-              headerText: 'Generating Your Questions',
-              descriptionText: 'Analyzing your job description...',
-            ),
-          ],
+                  // Content
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Metrics Cards
+                            metricsAsync.when(
+                              data: (metrics) {
+                                final cvCount = metrics?.cvGenerated ?? 0;
+                                final clCount = metrics?.coverLetterGenerated ?? 0;
+
+                                return Column(
+                                  children: [
+                                    _MetricsCard(
+                                      title: 'CVs Generated',
+                                      count: cvCount,
+                                      icon: Icons.description_outlined,
+                                      color: AppColors.kPrimary,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _MetricsCard(
+                                      title: 'Cover Letters',
+                                      count: clCount,
+                                      icon: Icons.edit_note_outlined,
+                                      color: AppColors.kAccent,
+                                    ),
+                                  ],
+                                );
+                              },
+                              loading: () => const Center(child: SingleLineWaitWidget()),
+                              error: (err, _) => Text(
+                                'Unable to load metrics',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyMedium!.copyWith(color: Colors.redAccent),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Instructions
+                            const QuoteBlock(
+                              text:
+                                  "1. Paste the job description\n"
+                                  "2. Select your experience level\n"
+                                  "3. Answer key questions\n"
+                                  "4. Get your CV & cover letter",
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Job Description Header
+                            Text(
+                              AppLocalizations.of(context)!.jobDescription.toUpperCase(),
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Job Description Field
+                            GeneralInputField(
+                              widgetKey: 'jd_field',
+                              needsFieldName: false,
+                              fieldName: '',
+                              hintText: AppLocalizations.of(
+                                context,
+                              )!.jobDescTextFieldHint,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your job description';
+                                }
+                                return null;
+                              },
+                              keyValueForDict: 'job_desc',
+                              userData: formData,
+                              keyboardType: TextInputType.multiline,
+                              errorProvider: null,
+                              enabled: true,
+                              actionWhenOnChangedisPressed: (value) {},
+                              textEditingController: null,
+                              textInputAction: TextInputAction.newline,
+                              focusNode: null,
+                              maxLines: 8,
+                              expands: false,
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Experience Level
+                            Text(
+                              AppLocalizations.of(context)!.experienceLevel.toUpperCase(),
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField2<String>(
+                              value: _selectedExperienceLevel,
+                              items: _experienceLevels.map((String level) {
+                                return DropdownMenuItem<String>(
+                                  value: level,
+                                  child: Text(level, style: TextStyle(height: 1.5)),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    _selectedExperienceLevel = newValue;
+                                    formData['experience_level'] = newValue;
+                                  });
+                                }
+                              },
+                              onSaved: (newValue) {
+                                formData['experience_level'] = newValue;
+                              },
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: AppColors.kGray300,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(kSmallRadius),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Submit Button
+                            GeneralElevatedButton(
+                              onPressed: () async {
+                                final isValid = _formKey.currentState!.validate();
+                                if (isValid) {
+                                  _formKey.currentState!.save();
+                                  ref.read(isGeneratingQuestionsProvider.notifier).state =
+                                      true;
+
+                                  final (questions, error) = await ref
+                                      .read(questionGeneratorController)
+                                      .generateQuestions(
+                                        formData['job_desc'],
+                                        formData['experience_level'],
+                                      );
+                                  ref.read(isGeneratingQuestionsProvider.notifier).state =
+                                      false;
+                                  if (error == "429") {
+                                    showErrorDialog(context, tooManyRequests);
+                                    return;
+                                  } else if (error == "500" || questions.isEmpty) {
+                                    showErrorDialog(context, somethingWentWrong);
+                                    return;
+                                  }
+
+                                  if (context.mounted) {
+                                    context.goNamed(
+                                      AppRouter.questionnaireScreen.substring(1),
+                                      extra: {
+                                        'questions': questions,
+                                        'jd': formData['job_desc'],
+                                      },
+                                    );
+                                  }
+                                }
+                              },
+                              borderRadius: 8,
+                              buttonHeight: 56,
+                              buttonColor: AppColors.kPrimary,
+                              child: Text(
+                                AppLocalizations.of(context)!.answerQuestions,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodyLarge!.copyWith(color: AppColors.kWhite),
+                              ),
+                            ),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              LoadingOverlay(
+                isLoading: isLoading,
+                headerText: 'Generating Your Questions',
+                descriptionText: 'Analyzing your job description...',
+              ),
+            ],
+          ),
         ),
       );
     }
