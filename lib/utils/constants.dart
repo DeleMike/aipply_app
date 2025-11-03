@@ -22,7 +22,7 @@ final messengerKey = GlobalKey<ScaffoldMessengerState>();
 /// navigator key
 final navigatorKey = GlobalKey<NavigatorState>();
 
-const networkTimeout = 30;
+const networkTimeout = 60;
 
 const String kHeadingFont = 'Poppins';
 const String kBodyFont = 'Lato';
