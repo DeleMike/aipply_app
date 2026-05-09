@@ -1,4 +1,4 @@
-import 'package:aipply/network/api_repository.dart';
+import 'package:aipply/core/home/domain/api_repository.dart';
 
 import '../domain/metrics.dart';
 

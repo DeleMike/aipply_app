@@ -1,5 +1,4 @@
 import 'package:aipply/core/results/presentation/result_screen.dart';
-import 'package:aipply/core/questionnaire/presentation/questionnaire_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -58,29 +57,6 @@ class AppRouter {
             state: state,
             child: const InitScreen(),
           ),
-        ),
-
-        GoRoute(
-          path: questionnaireScreen,
-          name: questionnaireScreen.substring(1),
-          builder: (context, state) {
-            final arguments = state.extra as Map;
-            final questions = List<String>.from(arguments['questions'] as List);
-            final jd = arguments['jd'];
-
-            return QuestionnaireScreen(questions: questions, jobDesc: jd);
-          },
-          pageBuilder: (context, state) {
-            final arguments = state.extra as Map;
-            final questions = List<String>.from(arguments['questions'] as List);
-            final jd = arguments['jd'];
-
-            return buildPageWithDefaultTransition<void>(
-              context: context,
-              state: state,
-              child: QuestionnaireScreen(questions: questions, jobDesc: jd),
-            );
-          },
         ),
 
         GoRoute(

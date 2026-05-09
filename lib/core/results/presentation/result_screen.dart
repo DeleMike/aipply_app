@@ -13,8 +13,6 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../utils/app_colors.dart';
 import '../../../widgets/loading_overlay.dart';
-import '../../../widgets/show_error_dialog.dart';
-import '../../questionnaire/application/providers.dart';
 
 /// Keeps child widgets alive when switching tabs
 class KeepAlive extends StatefulWidget {
@@ -72,51 +70,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
   Future<void> _refetchDocument(String docType) async {
     final provider = (docType == 'cv') ? _isRefetchingCv : _isRefetchingCoverLetter;
     ref.read(provider.notifier).state = true;
-
-    try {
-      String newHtml;
-      String error;
-      if (docType == 'cv') {
-        final (cvDoc, cvError) = await ref
-            .read(cvDocumentProvider)
-            .generateCV(widget.jobDesc, widget.qaListJson);
-        newHtml = cvDoc.text;
-        error = cvError;
-        if (error.isEmpty) {
-          setState(() => _currentCvHtml = newHtml);
-          _cvController.setText(newHtml);
-        }
-      } else {
-        final (clDoc, clError) = await ref
-            .read(coverLetterDocumentProvider)
-            .generateCoverLetter(widget.jobDesc, widget.qaListJson);
-        newHtml = clDoc.text;
-        error = clError;
-        if (error.isEmpty) {
-          setState(() => _currentCoverLetterHtml = newHtml);
-          _coverLetterController.setText(newHtml);
-        }
-      }
-
-      if (error.isNotEmpty) {
-        if (mounted) {
-          if (error == "429") {
-            showErrorDialog(context, tooManyRequests);
-          } else {
-            showErrorDialog(context, somethingWentWrong);
-          }
-        }
-      } else {
-        showToast('Document regenerated successfully!', textShouldBeInProd: true);
-      }
-    } catch (e) {
-      printOut('Error refetching document: $e');
-      if (mounted) {
-        showErrorDialog(context, somethingWentWrong);
-      }
-    } finally {
-      ref.read(provider.notifier).state = false;
-    }
   }
 
   @override
