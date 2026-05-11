@@ -13,8 +13,10 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../utils/app_colors.dart';
 import '../../../widgets/loading_overlay.dart';
+import '../../../widgets/show_error_dialog.dart';
+import '../../home/application/providers.dart';
 
-/// Keeps child widgets alive when switching tabs
+/// Keeps child widgets alive when switching tabs.
 class KeepAlive extends StatefulWidget {
   final Widget child;
   const KeepAlive({super.key, required this.child});
@@ -36,15 +38,16 @@ class _KeepAliveState extends State<KeepAlive> with AutomaticKeepAliveClientMixi
 class ResultScreen extends ConsumerStatefulWidget {
   final String cvHtml;
   final String coverLetterHtml;
-  final String jobDesc;
-  final List<Map<String, dynamic>> qaListJson;
+
+  /// The full payload originally sent to /generate-documents.
+  /// Stored so individual documents can be refetched without re-entering data.
+  final Map<String, dynamic> originalPayload;
 
   const ResultScreen({
     super.key,
     required this.cvHtml,
     required this.coverLetterHtml,
-    required this.jobDesc,
-    required this.qaListJson,
+    required this.originalPayload,
   });
 
   @override
@@ -67,9 +70,45 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     _currentCoverLetterHtml = widget.coverLetterHtml;
   }
 
+  /// Refetches a single document by calling /generate-documents again
+  /// with the same payload, then updating only the relevant tab.
   Future<void> _refetchDocument(String docType) async {
     final provider = (docType == 'cv') ? _isRefetchingCv : _isRefetchingCoverLetter;
     ref.read(provider.notifier).state = true;
+
+    try {
+      final (documents, error) = await ref
+          .read(documentGeneratorProvider)
+          .generateDocuments(payload: widget.originalPayload);
+
+      if (error.isNotEmpty) {
+        if (mounted) {
+          if (error == '429') {
+            showErrorDialog(context, tooManyRequests);
+          } else {
+            showErrorDialog(context, somethingWentWrong);
+          }
+        }
+        return;
+      }
+
+      if (docType == 'cv') {
+        setState(() => _currentCvHtml = documents.cvText);
+        _cvController.setText(documents.cvText);
+      } else {
+        setState(() => _currentCoverLetterHtml = documents.coverLetterText);
+        _coverLetterController.setText(documents.coverLetterText);
+      }
+
+      showToast('Document regenerated successfully!', textShouldBeInProd: true);
+    } catch (e) {
+      printOut('Error refetching document: $e');
+      if (mounted) {
+        showErrorDialog(context, somethingWentWrong);
+      }
+    } finally {
+      ref.read(provider.notifier).state = false;
+    }
   }
 
   @override
@@ -151,7 +190,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
     );
   }
 
-  /// Converts HTML to a PDF and triggers a browser download.
   Future<void> _downloadAsPdf(HtmlEditorController controller, String filename) async {
     final htmlContent = await controller.getText();
     final targetFileName = filename.endsWith('.pdf') ? filename : '$filename.pdf';
@@ -241,7 +279,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
       padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
       child: Column(
         children: [
-          // Download Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -270,8 +307,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen> {
             ),
           ),
           SizedBox(height: isMobile ? 12 : 16),
-
-          // Editor
           Expanded(
             child: Stack(
               children: [

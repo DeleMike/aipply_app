@@ -66,33 +66,27 @@ class AppRouter {
             final arguments = state.extra as Map;
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
-            final jobDesc = arguments['job_desc'];
-            final qaListJson = List<Map<String, dynamic>>.from(
-              arguments['qa_list_json'] as List,
-            );
+            final originalPayload = arguments['original_payload'];
+
             return ResultScreen(
               cvHtml: cvHTML,
               coverLetterHtml: coverLetterHTML,
-              jobDesc: jobDesc,
-              qaListJson: qaListJson,
+              originalPayload: originalPayload,
             );
           },
           pageBuilder: (context, state) {
             final arguments = state.extra as Map;
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
-            final jobDesc = arguments['job_desc'];
-            final qaListJson = List<Map<String, dynamic>>.from(
-              arguments['qa_list_json'] as List,
-            );
+            final originalPayload = arguments['original_payload'];
+
             return buildPageWithDefaultTransition<void>(
               context: context,
               state: state,
               child: ResultScreen(
                 cvHtml: cvHTML,
                 coverLetterHtml: coverLetterHTML,
-                jobDesc: jobDesc,
-                qaListJson: qaListJson,
+                originalPayload: originalPayload,
               ),
             );
           },

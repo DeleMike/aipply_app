@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:aipply/utils/app_colors.dart';
 import 'package:aipply/utils/assets.dart';
+import 'package:aipply/utils/debug_fns.dart';
 import 'package:aipply/utils/dimensions.dart';
 import 'package:aipply/widgets/general_elevated_button.dart';
 import 'package:aipply/widgets/general_input_field.dart';
@@ -7,7 +10,10 @@ import 'package:aipply/widgets/show_error_dialog.dart';
 import 'package:aipply/widgets/wait_shimmer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../utils/app_router.dart';
+import '../../../utils/constants.dart';
 import '../../../widgets/loading_overlay.dart';
 import '../../../widgets/quote_block.dart';
 import '../../metrics/application/providers.dart';
@@ -32,7 +38,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final double screenWidth = kScreenWidth(context);
     final bool isMobile = screenWidth < 768;
-    final isLoading = ref.watch(isGeneratingQuestionsProvider);
+    final isLoading = ref.watch(isGeneratingDocumentsProvider);
     final metricsAsync = ref.watch(metricsStreamProvider);
 
     return Scaffold(
@@ -277,7 +283,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       if (_formKey.currentState!.validate()) {
         _formKey.currentState!.save();
-        
+
+        final String mode = _selectedPath == ApplyPath.existing ? 'existing_cv' : 'fresh';
+
+        final Map<String, dynamic> payload = {
+          'job_description': _formData['job_description'] ?? '',
+          'company_about': _formData['company_about'] ?? '',
+          'target_role': _formData['target_role'] ?? '',
+          'mode': mode,
+          if (_selectedPath == ApplyPath.existing)
+            'existing_cv': _formData['existing_cv'] ?? '',
+          if (_selectedPath == ApplyPath.fresh)
+            'fresh_data': {
+              'contact_info': _formData['contact_info'] ?? '',
+              'work_history': _formData['work_history'] ?? '',
+              'skills': _formData['skills'] ?? '',
+              'education': _formData['education'] ?? '',
+              'other': _formData['other'] ?? '',
+            },
+        };
+
+        printOut('Payload = ${jsonEncode(payload)}');
+
+        ref.read(isGeneratingDocumentsProvider.notifier).state = true;
+
+        try {
+          final (documents, error) = await ref
+              .read(documentGeneratorProvider)
+              .generateDocuments(payload: payload);
+
+          ref.read(isGeneratingDocumentsProvider.notifier).state = false;
+
+          if (error.isNotEmpty) {
+            if (!mounted) return;
+            if (error == '429') {
+              showErrorDialog(context, tooManyRequests);
+            } else {
+              showErrorDialog(context, somethingWentWrong);
+            }
+            return;
+          }
+
+          if (!mounted) return;
+          context.goNamed(
+            AppRouter.resultsScreen.substring(1),
+            extra: {
+              'cv_html': documents.cvText,
+              'cover_letter_html': documents.coverLetterText,
+              // Pass the full payload so result screen can refetch either doc
+              // independently without re-entering data.
+              'original_payload': payload,
+            },
+          );
+        } catch (e) {
+          ref.read(isGeneratingDocumentsProvider.notifier).state = false;
+          if (!mounted) return;
+          showErrorDialog(context, somethingWentWrong);
+        }
       }
     } catch (e) {
       showErrorDialog(context, "Something went wrong. Please try again.");
