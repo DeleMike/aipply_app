@@ -1,10 +1,14 @@
-import 'package:aipply/core/home/data/question_generator_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final isGeneratingQuestionsProvider = StateProvider.autoDispose<bool>((ref) {
+import '../data/document_generator_controller.dart';
+
+/// Tracks whether document generation is in progress.
+/// Drives the [LoadingOverlay] on the home screen.
+final isGeneratingDocumentsProvider = StateProvider.autoDispose<bool>((ref) {
   return false;
 });
 
-final questionGeneratorController = ChangeNotifierProvider.autoDispose(
-  (ref) => QuestionGeneratorController(),
+/// Provides the [DocumentGeneratorController] for the home screen.
+final documentGeneratorProvider = ChangeNotifierProvider.autoDispose(
+  (ref) => DocumentGeneratorController(),
 );

@@ -1,5 +1,4 @@
 import 'package:aipply/core/results/presentation/result_screen.dart';
-import 'package:aipply/core/questionnaire/presentation/questionnaire_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -61,62 +60,33 @@ class AppRouter {
         ),
 
         GoRoute(
-          path: questionnaireScreen,
-          name: questionnaireScreen.substring(1),
-          builder: (context, state) {
-            final arguments = state.extra as Map;
-            final questions = List<String>.from(arguments['questions'] as List);
-            final jd = arguments['jd'];
-
-            return QuestionnaireScreen(questions: questions, jobDesc: jd);
-          },
-          pageBuilder: (context, state) {
-            final arguments = state.extra as Map;
-            final questions = List<String>.from(arguments['questions'] as List);
-            final jd = arguments['jd'];
-
-            return buildPageWithDefaultTransition<void>(
-              context: context,
-              state: state,
-              child: QuestionnaireScreen(questions: questions, jobDesc: jd),
-            );
-          },
-        ),
-
-        GoRoute(
           path: resultsScreen,
           name: resultsScreen.substring(1),
           builder: (context, state) {
             final arguments = state.extra as Map;
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
-            final jobDesc = arguments['job_desc'];
-            final qaListJson = List<Map<String, dynamic>>.from(
-              arguments['qa_list_json'] as List,
-            );
+            final originalPayload = arguments['original_payload'];
+
             return ResultScreen(
               cvHtml: cvHTML,
               coverLetterHtml: coverLetterHTML,
-              jobDesc: jobDesc,
-              qaListJson: qaListJson,
+              originalPayload: originalPayload,
             );
           },
           pageBuilder: (context, state) {
             final arguments = state.extra as Map;
             final cvHTML = arguments['cv_html'];
             final coverLetterHTML = arguments['cover_letter_html'];
-            final jobDesc = arguments['job_desc'];
-            final qaListJson = List<Map<String, dynamic>>.from(
-              arguments['qa_list_json'] as List,
-            );
+            final originalPayload = arguments['original_payload'];
+
             return buildPageWithDefaultTransition<void>(
               context: context,
               state: state,
               child: ResultScreen(
                 cvHtml: cvHTML,
                 coverLetterHtml: coverLetterHTML,
-                jobDesc: jobDesc,
-                qaListJson: qaListJson,
+                originalPayload: originalPayload,
               ),
             );
           },

@@ -1,24 +1,26 @@
-import 'package:web/web.dart' as web;
+import 'dart:convert';
 
-import 'package:aipply/l10n/app_localizations.dart';
 import 'package:aipply/utils/app_colors.dart';
-import 'package:aipply/utils/app_router.dart';
 import 'package:aipply/utils/assets.dart';
+import 'package:aipply/utils/debug_fns.dart';
 import 'package:aipply/utils/dimensions.dart';
 import 'package:aipply/widgets/general_elevated_button.dart';
 import 'package:aipply/widgets/general_input_field.dart';
 import 'package:aipply/widgets/show_error_dialog.dart';
 import 'package:aipply/widgets/wait_shimmer.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../utils/app_router.dart';
 import '../../../utils/constants.dart';
 import '../../../widgets/loading_overlay.dart';
 import '../../../widgets/quote_block.dart';
 import '../../metrics/application/providers.dart';
 import '../application/providers.dart';
+
+/// Defines the two primary paths for document generation.
+enum ApplyPath { existing, fresh, none }
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -28,613 +30,493 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _isPanelExpanded = true;
-  final Duration _animationDuration = const Duration(milliseconds: 300);
-  final List<String> _experienceLevels = [
-    'Just Starting Out',
-    'Some Experience',
-    'Highly Experienced',
-  ];
-
-  late String _selectedExperienceLevel;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  Map<String, dynamic> formData = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedExperienceLevel = _experienceLevels.first;
-  }
+  final Map<String, dynamic> _formData = {};
+  ApplyPath _selectedPath = ApplyPath.none;
 
   @override
   Widget build(BuildContext context) {
     final double screenWidth = kScreenWidth(context);
     final bool isMobile = screenWidth < 768;
-    final isLoading = ref.watch(isGeneratingQuestionsProvider);
+    final isLoading = ref.watch(isGeneratingDocumentsProvider);
     final metricsAsync = ref.watch(metricsStreamProvider);
 
-    // Mobile layout
-    if (isMobile) {
-      return Scaffold(
-        body: RefreshIndicator(
-          onRefresh: () async {
-            web.window.location.reload();
-          },
-          color: AppColors.kPrimary,
-          backgroundColor: Colors.white,
-          strokeWidth: 3.0,
-          child: Stack(
-            children: [
-              CustomScrollView(
-                slivers: [
-                  // App Bar with Logo
-                  SliverAppBar(
-                    expandedHeight: 120,
-                    collapsedHeight: 80,
-                    floating: false,
-                    pinned: true,
-                    backgroundColor: AppColors.kPrimary,
-                    flexibleSpace: FlexibleSpaceBar(
-                      centerTitle: true,
-                      title: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(AssetsImages.aipplyIcon, width: 35, height: 35),
-                          Text(
-                            AppLocalizations.of(context)!.appName.toUpperCase(),
-                            style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                              color: AppColors.kAccent,
+    return Scaffold(
+      body: Stack(
+        children: [
+          Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(isMobile ? 16 : 32),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildHeader(context, isMobile),
+                      const SizedBox(height: 24),
+                      _buildMetricsRow(metricsAsync),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle("The Opportunity"),
+                      _buildSharedInputs(context),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle("Your Starting Point"),
+                      _buildPathCards(),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: _buildPathSpecificInputs(),
+                      ),
+                      const SizedBox(height: 48),
+                      if (_selectedPath != ApplyPath.none)
+                        GeneralElevatedButton(
+                          onPressed: _handleGenerate,
+                          buttonColor: AppColors.kPrimary,
+                          borderRadius: 8,
+                          buttonHeight: 60,
+                          child: const Text(
+                            "GENERATE DOCUMENTS",
+                            style: TextStyle(
+                              color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Content
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Metrics Cards
-                            metricsAsync.when(
-                              data: (metrics) {
-                                final cvCount = metrics?.cvGenerated ?? 0;
-                                final clCount = metrics?.coverLetterGenerated ?? 0;
-
-                                return Column(
-                                  children: [
-                                    _MetricsCard(
-                                      title: 'CVs Generated',
-                                      count: cvCount,
-                                      icon: Icons.description_outlined,
-                                      color: AppColors.kPrimary,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _MetricsCard(
-                                      title: 'Cover Letters',
-                                      count: clCount,
-                                      icon: Icons.edit_note_outlined,
-                                      color: AppColors.kAccent,
-                                    ),
-                                  ],
-                                );
-                              },
-                              loading: () => const Center(child: SingleLineWaitWidget()),
-                              error: (err, _) => Text(
-                                'Unable to load metrics',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium!.copyWith(color: Colors.redAccent),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Instructions
-                            const QuoteBlock(
-                              text:
-                                  "1. Paste the job description\n"
-                                  "2. Select your experience level\n"
-                                  "3. Answer key questions\n"
-                                  "4. Get your CV & cover letter",
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Job Description Header
-                            Text(
-                              AppLocalizations.of(context)!.jobDescription.toUpperCase(),
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Job Description Field
-                            GeneralInputField(
-                              widgetKey: 'jd_field',
-                              needsFieldName: false,
-                              fieldName: '',
-                              hintText: AppLocalizations.of(
-                                context,
-                              )!.jobDescTextFieldHint,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your job description';
-                                }
-                                return null;
-                              },
-                              keyValueForDict: 'job_desc',
-                              userData: formData,
-                              keyboardType: TextInputType.multiline,
-                              errorProvider: null,
-                              enabled: true,
-                              actionWhenOnChangedisPressed: (value) {},
-                              textEditingController: null,
-                              textInputAction: TextInputAction.newline,
-                              focusNode: null,
-                              maxLines: 8,
-                              expands: false,
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Experience Level
-                            Text(
-                              AppLocalizations.of(context)!.experienceLevel.toUpperCase(),
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField2<String>(
-                              value: _selectedExperienceLevel,
-                              items: _experienceLevels.map((String level) {
-                                return DropdownMenuItem<String>(
-                                  value: level,
-                                  child: Text(level, style: TextStyle(height: 1.5)),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    _selectedExperienceLevel = newValue;
-                                    formData['experience_level'] = newValue;
-                                  });
-                                }
-                              },
-                              onSaved: (newValue) {
-                                formData['experience_level'] = newValue;
-                              },
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.kGray300,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(kSmallRadius),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Submit Button
-                            GeneralElevatedButton(
-                              onPressed: () async {
-                                final isValid = _formKey.currentState!.validate();
-                                if (isValid) {
-                                  _formKey.currentState!.save();
-                                  ref.read(isGeneratingQuestionsProvider.notifier).state =
-                                      true;
-
-                                  final (questions, error) = await ref
-                                      .read(questionGeneratorController)
-                                      .generateQuestions(
-                                        formData['job_desc'],
-                                        formData['experience_level'],
-                                      );
-                                  ref.read(isGeneratingQuestionsProvider.notifier).state =
-                                      false;
-                                  if (error == "429") {
-                                    showErrorDialog(context, tooManyRequests);
-                                    return;
-                                  } else if (error == "500" || questions.isEmpty) {
-                                    showErrorDialog(context, somethingWentWrong);
-                                    return;
-                                  }
-
-                                  if (context.mounted) {
-                                    context.goNamed(
-                                      AppRouter.questionnaireScreen.substring(1),
-                                      extra: {
-                                        'questions': questions,
-                                        'jd': formData['job_desc'],
-                                      },
-                                    );
-                                  }
-                                }
-                              },
-                              borderRadius: 8,
-                              buttonHeight: 56,
-                              buttonColor: AppColors.kPrimary,
-                              child: Text(
-                                AppLocalizations.of(context)!.answerQuestions,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyLarge!.copyWith(color: AppColors.kWhite),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                          ],
                         ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              LoadingOverlay(
-                isLoading: isLoading,
-                headerText: 'Generating Your Questions',
-                descriptionText: 'Analyzing your job description...',
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Desktop layout (original)
-    final double panelWidth = _isPanelExpanded ? screenWidth * 0.5 : 90.0;
-
-    return Scaffold(
-      body: Row(
-        children: [
-          AnimatedContainer(
-            duration: _animationDuration,
-            curve: Curves.easeInOut,
-            height: kScreenHeight(context),
-            width: panelWidth,
-            decoration: BoxDecoration(
-              color: AppColors.kPrimary,
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(kSmallRadius),
-                bottomRight: Radius.circular(kSmallRadius),
-              ),
-            ),
-            child: Stack(
-              children: [
-                AnimatedOpacity(
-                  duration: _animationDuration,
-                  opacity: _isPanelExpanded ? 1.0 : 0.0,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(AssetsImages.aipplyIcon),
-                        Text(
-                          AppLocalizations.of(context)!.appName.toUpperCase(),
-                          style: Theme.of(context).textTheme.displayLarge!.copyWith(
-                            fontSize: 65,
-                            color: AppColors.kAccent,
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: IconButton(
-                      splashColor: AppColors.kAccent.withValues(alpha: 0.3),
-                      highlightColor: AppColors.kAccent.withValues(alpha: 0.2),
-                      icon: Icon(
-                        _isPanelExpanded
-                            ? Icons.keyboard_double_arrow_left_rounded
-                            : Icons.keyboard_double_arrow_right_rounded,
-                        color: AppColors.kAccent,
-                        size: 30,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPanelExpanded = !_isPanelExpanded;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          Expanded(
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.jobDescription.toUpperCase(),
-                                  style: Theme.of(context).textTheme.headlineLarge,
-                                ),
-                                AnimatedSlide(
-                                  offset: !_isPanelExpanded
-                                      ? Offset.zero
-                                      : const Offset(1, 0),
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut,
-                                  child: AnimatedOpacity(
-                                    opacity: !_isPanelExpanded ? 1.0 : 0.0,
-                                    duration: const Duration(milliseconds: 300),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Image.asset(
-                                            AssetsImages.aipplyIcon,
-                                            width: 50,
-                                            height: 50,
-                                          ),
-                                          Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.appName.toUpperCase(),
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.labelLarge!.copyWith(),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            metricsAsync.when(
-                              data: (metrics) {
-                                final cvCount = metrics?.cvGenerated ?? 0;
-                                final clCount = metrics?.coverLetterGenerated ?? 0;
-
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 24.0),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: _MetricsCard(
-                                          title: 'CVs Generated',
-                                          count: cvCount,
-                                          icon: Icons.description_outlined,
-                                          color: AppColors.kPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: _MetricsCard(
-                                          title: 'Cover Letters Generated',
-                                          count: clCount,
-                                          icon: Icons.edit_note_outlined,
-                                          color: AppColors.kAccent,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              loading: () => const Center(child: SingleLineWaitWidget()),
-                              error: (err, _) => Text(
-                                'Unable to load metrics',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.bodyMedium!.copyWith(color: Colors.redAccent),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8.0, bottom: 20.0),
-                              child: QuoteBlock(
-                                text:
-                                    "1. Paste the job description and select your experience.\n"
-                                    "2. We'll generate key questions based on what the company is looking for.\n"
-                                    "3. You'll answer those, and we'll write your CV and cover letter.",
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: GeneralInputField(
-                            widgetKey: 'jd_field',
-                            needsFieldName: false,
-                            fieldName: '',
-                            hintText: AppLocalizations.of(context)!.jobDescTextFieldHint,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your job description';
-                              }
-                              return null;
-                            },
-                            keyValueForDict: 'job_desc',
-                            userData: formData,
-                            keyboardType: TextInputType.multiline,
-                            errorProvider: null,
-                            enabled: true,
-                            actionWhenOnChangedisPressed: (value) {},
-                            textEditingController: null,
-                            textInputAction: TextInputAction.newline,
-                            focusNode: null,
-                            maxLines: null,
-                            expands: true,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              AppLocalizations.of(context)!.experienceLevel.toUpperCase(),
-                              style: Theme.of(context).textTheme.headlineLarge,
-                            ),
-                            const SizedBox(height: 12),
-                            DropdownButtonFormField2<String>(
-                              value: _selectedExperienceLevel,
-                              items: _experienceLevels.map((String level) {
-                                return DropdownMenuItem<String>(
-                                  value: level,
-                                  child: Text(level, style: TextStyle(height: 1.5)),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  setState(() {
-                                    _selectedExperienceLevel = newValue;
-                                    formData['experience_level'] = newValue;
-                                  });
-                                }
-                              },
-                              onSaved: (newValue) {
-                                formData['experience_level'] = newValue;
-                              },
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: AppColors.kGray300,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(kSmallRadius),
-                                  borderSide: BorderSide.none,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        GeneralElevatedButton(
-                          onPressed: () async {
-                            final isValid = _formKey.currentState!.validate();
-                            if (isValid) {
-                              _formKey.currentState!.save();
-                              ref.read(isGeneratingQuestionsProvider.notifier).state =
-                                  true;
-
-                              final (questions, error) = await ref
-                                  .read(questionGeneratorController)
-                                  .generateQuestions(
-                                    formData['job_desc'],
-                                    formData['experience_level'],
-                                  );
-                              ref.read(isGeneratingQuestionsProvider.notifier).state =
-                                  false;
-                              if (error == "429") {
-                                showErrorDialog(context, tooManyRequests);
-                                return;
-                              } else if (error == "500" || questions.isEmpty) {
-                                showErrorDialog(context, somethingWentWrong);
-                                return;
-                              }
-
-                              if (context.mounted) {
-                                context.goNamed(
-                                  AppRouter.questionnaireScreen.substring(1),
-                                  extra: {
-                                    'questions': questions,
-                                    'jd': formData['job_desc'],
-                                  },
-                                );
-                              }
-                            }
-                          },
-                          borderRadius: 8,
-                          buttonHeight: 65,
-                          buttonColor: AppColors.kPrimary,
-                          child: Text(
-                            AppLocalizations.of(context)!.answerQuestions,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyLarge!.copyWith(color: AppColors.kWhite),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                LoadingOverlay(
-                  isLoading: isLoading,
-                  headerText: 'Generating Your Questions',
-                  descriptionText: 'Analyzing your job description...',
-                ),
-              ],
-            ),
+          LoadingOverlay(
+            isLoading: isLoading,
+            headerText: 'Generating Your Documents',
+            descriptionText: 'Polishing your CV and Cover Letter...',
           ),
         ],
       ),
     );
   }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: AppColors.kTextSecondary,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSharedInputs(BuildContext context) {
+    return Column(
+      children: [
+        GeneralInputField(
+          widgetKey: 'target_role',
+          fieldName: 'Target Role',
+          hintText: "What role are you going for? (e.g. Senior Backend Engineer)",
+          keyValueForDict: 'target_role',
+          userData: _formData,
+          validator: (v) => v!.isEmpty ? "Target role is recommended" : null,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          maxLines: 1,
+          enabled: true,
+          actionWhenOnChangedisPressed: null,
+          textEditingController: null,
+          focusNode: null,
+          errorProvider: null,
+        ),
+        const SizedBox(height: 16),
+        GeneralInputField(
+          widgetKey: 'job_desc',
+          fieldName: 'Job Description',
+          hintText: "Paste the Job Description here...",
+          maxLines: 8,
+          keyValueForDict: 'job_description',
+          userData: _formData,
+          validator: (v) => v!.isEmpty ? "Job description is required" : null,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          enabled: true,
+          actionWhenOnChangedisPressed: null,
+          textEditingController: null,
+          focusNode: null,
+          errorProvider: null,
+        ),
+        const SizedBox(height: 16),
+        GeneralInputField(
+          widgetKey: 'company_about',
+          fieldName: 'About the Company',
+          hintText: "Optional: Paste company 'About' info...",
+          maxLines: 3,
+          keyValueForDict: 'company_about',
+          userData: _formData,
+          validator: null,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          enabled: true,
+          actionWhenOnChangedisPressed: null,
+          textEditingController: null,
+          focusNode: null,
+          errorProvider: null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPathCards() {
+    return Row(
+      children: [
+        Expanded(
+          child: _PathSelectionCard(
+            title: "I have a CV",
+            subtitle: "Rewrite & tailor existing text",
+            icon: Icons.description_outlined,
+            isSelected: _selectedPath == ApplyPath.existing,
+            onTap: () => setState(() => _selectedPath = ApplyPath.existing),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _PathSelectionCard(
+            title: "Starting afresh",
+            subtitle: "Build from raw notes",
+            icon: Icons.auto_awesome_outlined,
+            isSelected: _selectedPath == ApplyPath.fresh,
+            onTap: () => setState(() => _selectedPath = ApplyPath.fresh),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPathSpecificInputs() {
+    if (_selectedPath == ApplyPath.existing) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 24),
+        child: GeneralInputField(
+          widgetKey: 'existing_cv',
+          fieldName: 'Existing CV',
+          hintText: "Paste your current CV text here...",
+          maxLines: 12,
+          keyValueForDict: 'existing_cv',
+          userData: _formData,
+          validator: (v) => v!.isEmpty ? "Please provide your current CV" : null,
+          keyboardType: TextInputType.multiline,
+          textInputAction: TextInputAction.newline,
+          enabled: true,
+          actionWhenOnChangedisPressed: null,
+          textEditingController: null,
+          focusNode: null,
+          errorProvider: null,
+        ),
+      );
+    } else if (_selectedPath == ApplyPath.fresh) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 24),
+        child: Column(
+          children: [
+            _buildConversationalField(
+              "Who is this for?",
+              "contact_info",
+              "Name, Email, Phone (Optional)",
+              1,
+            ),
+            _buildConversationalField(
+              "Any work history?",
+              "work_history",
+              "Part-time, freelance, internships...",
+              5,
+            ),
+            _buildConversationalField(
+              "What are you good at?",
+              "skills",
+              "List your skills",
+              2,
+            ),
+            _buildConversationalField(
+              "Education",
+              "education",
+              "School, Degree (Optional)",
+              2,
+            ),
+            _buildConversationalField(
+              "Anything else?",
+              "other",
+              "Projects, volunteering, achievements",
+              3,
+            ),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildConversationalField(String label, String key, String hint, int lines) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: GeneralInputField(
+        widgetKey: key,
+        fieldName: label,
+        hintText: hint,
+        maxLines: lines,
+        keyValueForDict: key,
+        userData: _formData,
+        validator: null,
+        keyboardType: lines > 1 ? TextInputType.multiline : TextInputType.text,
+        textInputAction: lines > 1 ? TextInputAction.newline : TextInputAction.next,
+        enabled: true,
+        actionWhenOnChangedisPressed: null,
+        textEditingController: null,
+        focusNode: null,
+        errorProvider: null,
+      ),
+    );
+  }
+
+  void _handleGenerate() async {
+    try {
+      if (_formKey.currentState!.validate()) {
+        _formKey.currentState!.save();
+
+        final String mode = _selectedPath == ApplyPath.existing ? 'existing_cv' : 'fresh';
+
+        final Map<String, dynamic> payload = {
+          'job_description': _formData['job_description'] ?? '',
+          'company_about': _formData['company_about'] ?? '',
+          'target_role': _formData['target_role'] ?? '',
+          'mode': mode,
+          if (_selectedPath == ApplyPath.existing)
+            'existing_cv': _formData['existing_cv'] ?? '',
+          if (_selectedPath == ApplyPath.fresh)
+            'fresh_data': {
+              'contact_info': _formData['contact_info'] ?? '',
+              'work_history': _formData['work_history'] ?? '',
+              'skills': _formData['skills'] ?? '',
+              'education': _formData['education'] ?? '',
+              'other': _formData['other'] ?? '',
+            },
+        };
+
+        printOut('Payload = ${jsonEncode(payload)}');
+
+        ref.read(isGeneratingDocumentsProvider.notifier).state = true;
+
+        try {
+          final (documents, error) = await ref
+              .read(documentGeneratorProvider)
+              .generateDocuments(payload: payload);
+
+          ref.read(isGeneratingDocumentsProvider.notifier).state = false;
+
+          if (error.isNotEmpty) {
+            if (!mounted) return;
+            if (error == '429') {
+              showErrorDialog(context, tooManyRequests);
+            } else {
+              showErrorDialog(context, somethingWentWrong);
+            }
+            return;
+          }
+
+          if (!mounted) return;
+          context.goNamed(
+            AppRouter.resultsScreen.substring(1),
+            extra: {
+              'cv_html': documents.cvText,
+              'cover_letter_html': documents.coverLetterText,
+              // Pass the full payload so result screen can refetch either doc
+              // independently without re-entering data.
+              'original_payload': payload,
+            },
+          );
+        } catch (e) {
+          ref.read(isGeneratingDocumentsProvider.notifier).state = false;
+          if (!mounted) return;
+          showErrorDialog(context, somethingWentWrong);
+        }
+      }
+    } catch (e) {
+      showErrorDialog(context, "Something went wrong. Please try again.");
+    }
+  }
+
+  Widget _buildHeader(BuildContext context, bool isMobile) {
+    return Column(
+      children: [
+        Image.asset(AssetsImages.aipplyIcon, width: isMobile ? 50 : 80),
+        const SizedBox(height: 8),
+        Text(
+          "AIPPLY",
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.kPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        const QuoteBlock(
+          text:
+              "Paste a job description and choose whether to tailor your existing CV or build a fresh one from scratch.",
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricsRow(AsyncValue metricsAsync) {
+    return metricsAsync.when(
+      data: (metrics) => Row(
+        children: [
+          Expanded(
+            child: _MiniMetric(
+              label: "CVs Generated",
+              count: metrics?.cvGenerated ?? 0,
+              backgroundColor: const Color(0xFFFCE4EC), // Light Pink
+              iconColor: Colors.pink[400]!,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _MiniMetric(
+              label: "Cover Letters",
+              count: metrics?.coverLetterGenerated ?? 0,
+              backgroundColor: const Color(0xFFF3E5F5), // Light Purple
+              iconColor: Colors.purple[400]!,
+            ),
+          ),
+        ],
+      ),
+      loading: () => const SingleLineWaitWidget(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
 }
 
-class _MetricsCard extends StatelessWidget {
+class _PathSelectionCard extends StatefulWidget {
   final String title;
-  final int count;
+  final String subtitle;
   final IconData icon;
-  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
 
-  const _MetricsCard({
+  const _PathSelectionCard({
     required this.title,
-    required this.count,
+    required this.subtitle,
     required this.icon,
-    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_PathSelectionCard> createState() => _PathSelectionCardState();
+}
+
+class _PathSelectionCardState extends State<_PathSelectionCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? AppColors.kPrimary.withValues(alpha: 0.08)
+                : (_isHovered ? AppColors.kGray200 : Colors.white),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: widget.isSelected
+                  ? AppColors.kPrimary
+                  : (_isHovered ? AppColors.kGray400 : AppColors.kGray300),
+              width: widget.isSelected ? 2 : 1,
+            ),
+            boxShadow: _isHovered
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            children: [
+              Icon(
+                widget.icon,
+                color: widget.isSelected
+                    ? AppColors.kPrimary
+                    : (_isHovered ? AppColors.kTextOnAccent : AppColors.kGray600),
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: widget.isSelected ? AppColors.kPrimary : null,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                widget.subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppColors.kGray600),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  final String label;
+  final int count;
+  final Color backgroundColor;
+  final Color iconColor;
+
+  const _MiniMetric({
+    required this.label,
+    required this.count,
+    required this.backgroundColor,
+    required this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.01),
-            blurRadius: 1,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '$count',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: iconColor.withValues(alpha: 0.8),
             ),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(fontWeight: FontWeight.bold, color: iconColor, fontSize: 18),
           ),
         ],
       ),

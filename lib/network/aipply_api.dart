@@ -1,6 +1,5 @@
 class AipplyApi {
-  static const String generateQuetion = 'generate-questions';
-  static const String generateCV = 'generate-cv';
-  static const String generateCoverLetter = 'generate-cover-letter';
+  static const String generateQuestions = 'generate-questions';
+  static const String generateDocuments = 'generate-documents';
   static const String metrics = 'metrics';
 }
